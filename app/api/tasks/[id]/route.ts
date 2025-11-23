@@ -80,7 +80,7 @@ export async function PATCH(
       skip: "skipped",
     };
 
-    let notifyNext: { assignee: typeof task.assignee; nextTask: typeof task } | null = null;
+    let notifyNext: { assignee: typeof task.assignee; nextTask: { id: number; step: number } } | null = null;
     let notifyAuthor: { status: "approved" | "rejected"; comment?: string | null } | null = null;
 
     await prisma.$transaction(async (tx) => {
@@ -123,7 +123,7 @@ export async function PATCH(
         });
         notifyNext = {
           assignee: nextTask.assignee,
-          nextTask,
+          nextTask: { id: nextTask.id, step: nextTask.step },
         };
       }
     });
