@@ -1,0 +1,110 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                    Int       @id @default(autoincrement())
+  email                 String    @unique
+  password              String
+  name                  String
+  role                  String
+  telegramId            BigInt?
+  telegramChatId        String?
+  telegramUsername      String?
+  telegramFirstName     String?
+  telegramLastName      String?
+  telegramBindingCode   String?
+  telegramBindingExpiry DateTime?
+  documents             Document[] @relation("UserDocuments")
+  recipientDocuments    Document[] @relation("RecipientDocuments")
+  responsibleDocuments  Document[] @relation("ResponsibleDocuments")
+  watchingDocuments     DocumentWatcher[]
+  tasks                 Task[]
+  executionAssignments  ExecutionAssignment[]
+}
+
+model Document {
+  id            Int       @id @default(autoincrement())
+  title         String
+  body          String
+  content       String
+  authorId      Int
+  author        User      @relation("UserDocuments", fields: [authorId], references: [id])
+  recipientId   Int
+  recipient     User      @relation("RecipientDocuments", fields: [recipientId], references: [id])
+  responsibleId Int?
+  responsible   User?     @relation("ResponsibleDocuments", fields: [responsibleId], references: [id])
+  status        String    @default("draft")
+  currentStep   Int       @default(0)
+  initiatorAcknowledged Boolean @default(false)
+  returnToInitiator Boolean @default(false)
+  executionNotes String?
+  createdAt     DateTime  @default(now())
+  files         File[]
+  tasks         Task[]
+  watchers      DocumentWatcher[]
+  executionAssignments ExecutionAssignment[]
+}
+
+model Task {
+  id           Int       @id @default(autoincrement())
+  documentId   Int
+  document     Document  @relation(fields: [documentId], references: [id])
+  assigneeId   Int?
+  assignee     User?     @relation(fields: [assigneeId], references: [id])
+  step         Int
+  status       String    @default("pending")
+  action       String    @default("approve")
+  instruction  String?
+  canSkip      Boolean   @default(false)
+  commentRequired Boolean @default(false)
+  returnedToAuthor Boolean @default(false)
+  visibleAfterStep Int?
+  comment      String?
+  completedAt  DateTime?
+}
+
+model DocumentWatcher {
+  id         Int      @id @default(autoincrement())
+  documentId Int
+  userId     Int
+  document   Document @relation(fields: [documentId], references: [id])
+  user       User     @relation(fields: [userId], references: [id])
+}
+
+model File {
+  id         Int       @id @default(autoincrement())
+  documentId Int
+  document   Document  @relation(fields: [documentId], references: [id])
+  url        String
+  name       String
+  size       Int
+  createdAt  DateTime  @default(now())
+}
+
+enum ExecutionStatus {
+  pending
+  viewed
+  in_progress
+  completed
+}
+
+model ExecutionAssignment {
+  id          Int              @id @default(autoincrement())
+  documentId  Int
+  document    Document         @relation(fields: [documentId], references: [id])
+  assigneeId  Int
+  assignee    User             @relation(fields: [assigneeId], references: [id])
+  status      ExecutionStatus  @default(pending)
+  deadline    DateTime?
+  comment     String?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  @@unique([documentId, assigneeId])
+}

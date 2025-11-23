@@ -1,36 +1,129 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Система документооборота FlowOne
 
-## Getting Started
+Полнофункциональная система управления документами с многоэтапным согласованием и интеграцией с Telegram.
 
-First, run the development server:
+## Технологии
+
+- **Next.js 14** (App Router)
+- **TypeScript**
+- **Prisma ORM** с PostgreSQL (Supabase)
+- **NextAuth.js** для аутентификации
+- **shadcn/ui** + Tailwind CSS
+- **Telegram Bot API** для уведомлений
+
+## Быстрый старт
+
+### 1. Установка зависимостей
+
+```bash
+npm install
+```
+
+### 2. Настройка окружения
+
+Скопируйте `.env.example` в `.env` и заполните переменные:
+
+```bash
+cp .env.example .env
+```
+
+Подробные инструкции по настройке см. в [docs/env-setup.md](./docs/env-setup.md)
+
+### 3. Настройка базы данных
+
+```bash
+# Применить схему к базе данных
+npx prisma db push
+
+# Сгенерировать Prisma Client
+npx prisma generate
+
+# Заполнить тестовыми данными
+npm run db:seed
+```
+
+### 4. Запуск dev-сервера
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Откройте [http://localhost:3000](http://localhost:3000)
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Тестовые пользователи
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+После выполнения `npm run db:seed` доступны следующие пользователи:
 
-## Learn More
+| Email | Пароль | Роль |
+|-------|--------|------|
+| director@example.com | password123 | Директор |
+| accountant@example.com | password123 | Главный бухгалтер |
+| head@example.com | password123 | Руководитель |
+| employee1@example.com | password123 | Снабженец |
+| employee2@example.com | password123 | Снабженец |
 
-To learn more about Next.js, take a look at the following resources:
+## Основные возможности
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- ✅ Аутентификация с NextAuth.js
+- ✅ Дашборд с фильтрацией документов
+- ✅ Создание служебных записок с вложениями
+- ✅ 4-этапный workflow согласования
+- ✅ Telegram уведомления для исполнителей
+- ✅ Детальная страница документа с прогресс-баром
+- ✅ Согласование/отклонение с комментариями
+- ✅ Адаптивный UI с темной темой
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Структура проекта
 
-## Deploy on Vercel
+```
+flowone/
+├── app/                      # Next.js App Router
+│   ├── api/                  # API routes
+│   ├── dashboard/            # Дашборд
+│   ├── documents/            # Страницы документов
+│   └── login/                # Страница входа
+├── components/               # React компоненты
+│   ├── ui/                   # shadcn/ui компоненты
+│   ├── auth/                 # Компоненты аутентификации
+│   ├── dashboard/            # Компоненты дашборда
+│   └── documents/            # Компоненты документов
+├── lib/                      # Утилиты и хелперы
+│   ├── prisma.ts             # Prisma client
+│   ├── auth.ts               # NextAuth config
+│   ├── workflow.ts           # Логика workflow
+│   ├── telegram.ts           # Telegram интеграция
+│   └── supabase.ts           # Supabase helpers
+├── prisma/
+│   ├── schema.prisma         # Схема БД
+│   └── seed.ts               # Seed скрипт
+└── docs/                     # Документация
+    └── env-setup.md          # Инструкции по настройке
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Команды
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```bash
+# Разработка
+npm run dev
+
+# Сборка
+npm run build
+
+# Запуск production
+npm start
+
+# База данных
+npx prisma db push        # Применить схему
+npx prisma generate       # Сгенерировать client
+npm run db:seed           # Заполнить тестовыми данными
+npx prisma studio         # Открыть Prisma Studio
+
+# Линтинг
+npm run lint
+```
+
+## Дополнительная информация
+
+- Подробная настройка окружения: [docs/env-setup.md](./docs/env-setup.md)
+- Prisma документация: [https://www.prisma.io/docs](https://www.prisma.io/docs)
+- Next.js документация: [https://nextjs.org/docs](https://nextjs.org/docs)
