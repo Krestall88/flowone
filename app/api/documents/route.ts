@@ -205,8 +205,11 @@ export async function POST(request: NextRequest) {
   const uploadedStorageFiles: { name: string; url: string; size: number }[] = [];
 
   if (formFiles.length > 0) {
-    for (const file of formFiles) {
-      const uploaded = await uploadDocumentFile(file, `documents/${authorId}`);
+    const uploadedList = await Promise.all(
+      formFiles.map((file) => uploadDocumentFile(file, `documents/${authorId}`)),
+    );
+
+    for (const uploaded of uploadedList) {
       uploadedStorageFiles.push({
         name: uploaded.name,
         url: uploaded.url,
@@ -327,11 +330,13 @@ export async function POST(request: NextRequest) {
 
   const firstTask = documentWithRelations?.tasks.find((task) => task.step === 1);
   if (firstTask?.assignee) {
-    await sendTaskNotification(
+    sendTaskNotification(
       firstTask.assignee,
       { id: result.id, title },
       { id: firstTask.id, step: firstTask.step },
-    );
+    ).catch((error) => {
+      console.error("Failed to send initial task notification:", error);
+    });
   }
 
   return NextResponse.json({ document: documentWithRelations });
