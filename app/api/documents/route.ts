@@ -82,7 +82,51 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   const sessionUser = await requireUser();
-  const body = await request.json();
+
+  const contentType = request.headers.get("content-type") || "";
+  let body: unknown;
+
+  if (contentType.includes("multipart/form-data")) {
+    const formData = await request.formData();
+
+    const title = formData.get("title")?.toString() ?? "";
+    const contentBody = formData.get("body")?.toString() ?? "";
+    const recipientIdRaw = formData.get("recipientId")?.toString();
+    const responsibleIdRaw = formData.get("responsibleId")?.toString();
+    const stagesRaw = formData.get("stages")?.toString() ?? "[]";
+
+    let stagesParsed: unknown;
+    try {
+      stagesParsed = JSON.parse(stagesRaw);
+    } catch {
+      stagesParsed = [];
+    }
+
+    const executionNotes = formData.get("executionNotes")?.toString();
+    const initiatorAcknowledgedRaw = formData.get("initiatorAcknowledged")?.toString();
+    const returnToInitiatorRaw = formData.get("returnToInitiator")?.toString();
+
+    // Файлы пока только логируем, чтобы понимать нагрузку, но не сохраняем
+    const uploadedFiles = formData.getAll("files");
+    console.log("[documents] Uploaded files via FormData:", uploadedFiles.length);
+
+    body = {
+      title,
+      body: contentBody,
+      recipientId: recipientIdRaw ? Number(recipientIdRaw) : NaN,
+      responsibleId: responsibleIdRaw ? Number(responsibleIdRaw) : undefined,
+      stages: stagesParsed,
+      watchers: [],
+      initiatorAcknowledged: initiatorAcknowledgedRaw === "true",
+      returnToInitiator: returnToInitiatorRaw === "true",
+      executionAssignees: [],
+      executionNotes: executionNotes ?? undefined,
+    };
+  } else {
+    // JSON-запросы (e2e-скрипт и возможные внешние клиенты)
+    body = await request.json();
+  }
+
   const parsed = createSchema.safeParse(body);
 
   if (!parsed.success) {

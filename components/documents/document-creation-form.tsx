@@ -140,6 +140,14 @@ export function DocumentCreationForm({ users, currentUser }: DocumentCreationFor
       return;
     }
 
+    // Ограничиваем суммарный размер вложений, чтобы не упираться в лимит Vercel (~4.5 МБ)
+    const maxTotalSize = 4 * 1024 * 1024; // 4 МБ
+    const totalSize = files.reduce((sum, file) => sum + file.size, 0);
+    if (totalSize > maxTotalSize) {
+      alert(`Слишком большой общий размер вложений. Максимум ${(maxTotalSize / 1024 / 1024).toFixed(1)} МБ.`);
+      return;
+    }
+
     startTransition(async () => {
       try {
         const formData = new FormData();
@@ -168,18 +176,36 @@ export function DocumentCreationForm({ users, currentUser }: DocumentCreationFor
         });
 
         if (!response.ok) {
-          const error = await response.json();
-          console.error("API error:", error);
-          
-          if (error.errors) {
+          let errorData: any = null;
+          try {
+            errorData = await response.json();
+          } catch {
+            const text = await response.text().catch(() => "");
+
+            if (response.status === 413) {
+              throw new Error(
+                "Файл(ы) слишком большие для загрузки на сервер. Уменьшите размер вложений и попробуйте снова.",
+              );
+            }
+
+            if (text) {
+              throw new Error(text);
+            }
+
+            throw new Error("Ошибка создания документа");
+          }
+
+          console.error("API error:", errorData);
+
+          if (errorData.errors) {
             // Zod validation errors
-            const errorMessages = Object.entries(error.errors)
+            const errorMessages = Object.entries(errorData.errors)
               .map(([field, messages]) => `${field}: ${(messages as string[]).join(", ")}`)
               .join("\n");
             throw new Error(`Ошибки валидации:\n${errorMessages}`);
           }
           
-          throw new Error(error.error || "Ошибка создания документа");
+          throw new Error(errorData.error || "Ошибка создания документа");
         }
 
         const data = await response.json();
