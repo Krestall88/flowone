@@ -6,6 +6,7 @@ import { requireUser } from "@/lib/session";
 import { serializeDocumentContent } from "@/lib/document-content";
 import { TASK_ACTIONS } from "@/lib/workflow";
 import { sendTaskNotification } from "@/lib/telegram";
+import { uploadDocumentFile } from "@/lib/supabase";
 
 const stageActions = TASK_ACTIONS.length > 0 ? TASK_ACTIONS : ["approve", "sign", "review"];
 const createSchema = z.object({
@@ -85,6 +86,7 @@ export async function POST(request: NextRequest) {
 
   const contentType = request.headers.get("content-type") || "";
   let body: unknown;
+  let formFiles: File[] = [];
 
   if (contentType.includes("multipart/form-data")) {
     const formData = await request.formData();
@@ -106,9 +108,16 @@ export async function POST(request: NextRequest) {
     const initiatorAcknowledgedRaw = formData.get("initiatorAcknowledged")?.toString();
     const returnToInitiatorRaw = formData.get("returnToInitiator")?.toString();
 
-    // Файлы пока только логируем, чтобы понимать нагрузку, но не сохраняем
-    const uploadedFiles = formData.getAll("files");
-    console.log("[documents] Uploaded files via FormData:", uploadedFiles.length);
+    // Собираем файлы из FormData для последующей загрузки в Supabase Storage
+    const fileEntries = formData.getAll("files");
+    formFiles = fileEntries.filter(
+      (value): value is File =>
+        typeof value === "object" &&
+        value !== null &&
+        "arrayBuffer" in value &&
+        "name" in (value as any),
+    );
+    console.log("[documents] Uploaded files via FormData:", formFiles.length);
 
     body = {
       title,
@@ -192,6 +201,20 @@ export async function POST(request: NextRequest) {
 
   const content = serializeDocumentContent({ body: contentBody, recipientId });
 
+  // Загрузка файлов в Supabase Storage (S3) до начала транзакции БД
+  const uploadedStorageFiles: { name: string; url: string; size: number }[] = [];
+
+  if (formFiles.length > 0) {
+    for (const file of formFiles) {
+      const uploaded = await uploadDocumentFile(file, `documents/${authorId}`);
+      uploadedStorageFiles.push({
+        name: uploaded.name,
+        url: uploaded.url,
+        size: uploaded.size,
+      });
+    }
+  }
+
   const result = await prisma.$transaction(async (tx) => {
     const document = await tx.document.create({
       data: {
@@ -258,6 +281,17 @@ export async function POST(request: NextRequest) {
       });
     }
 
+    if (uploadedStorageFiles.length > 0) {
+      await tx.file.createMany({
+        data: uploadedStorageFiles.map((file) => ({
+          documentId: document.id,
+          url: file.url,
+          name: file.name,
+          size: file.size,
+        })),
+      });
+    }
+
     return document;
   });
 
@@ -287,6 +321,7 @@ export async function POST(request: NextRequest) {
           },
         },
       },
+      files: true,
     },
   });
 
