@@ -222,7 +222,7 @@ export async function POST(request: NextRequest) {
     include: {
       author: { select: { name: true, email: true } },
       tasks: {
-        include: { assignee: { select: { name: true, telegramId: true } } },
+        include: { assignee: { select: { id: true, name: true, telegramId: true } } },
         orderBy: { step: "asc" },
       },
       watchers: {
