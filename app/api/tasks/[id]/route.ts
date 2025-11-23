@@ -80,7 +80,8 @@ export async function PATCH(
       skip: "skipped",
     };
 
-    let notifyNext: { assignee: typeof task.assignee; nextTask: { id: number; step: number } } | null = null;
+    let nextAssignee: typeof task.assignee | null = null;
+    let nextTaskInfo: { id: number; step: number } | null = null;
     let notifyAuthor: { status: "approved" | "rejected"; comment?: string | null } | null = null;
 
     await prisma.$transaction(async (tx) => {
@@ -121,24 +122,24 @@ export async function PATCH(
           where: { id: task.documentId },
           data: { currentStep: nextTask.step },
         });
-        notifyNext = {
-          assignee: nextTask.assignee,
-          nextTask: { id: nextTask.id, step: nextTask.step },
-        };
+        nextAssignee = nextTask.assignee;
+        nextTaskInfo = { id: nextTask.id, step: nextTask.step };
       }
     });
 
     if (notifyAuthor) {
+      const { status, comment: notifyComment } = notifyAuthor;
+
       await sendDocumentStatusUpdate(
         task.document.author,
         task.document,
-        notifyAuthor.status,
-        notifyAuthor.comment,
+        status,
+        notifyComment,
       );
     }
 
-    if (notifyNext && notifyNext.assignee) {
-      await sendTaskNotification(notifyNext.assignee, task.document, notifyNext.nextTask);
+    if (nextAssignee && nextTaskInfo) {
+      await sendTaskNotification(nextAssignee, task.document, nextTaskInfo);
     }
 
     return NextResponse.json({ success: true });
