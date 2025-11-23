@@ -7,6 +7,10 @@ export function getSupabaseServiceClient() {
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
   if (!url || !key) {
+    console.error("[supabase] Missing credentials", {
+      hasUrl: !!url,
+      hasKey: !!key,
+    });
     throw new Error("Supabase credentials are not configured");
   }
 
