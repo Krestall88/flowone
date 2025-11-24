@@ -2,12 +2,12 @@
 
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
-import { Home, FileText, PlusCircle, Archive, LogOut, User, Send } from "lucide-react";
+import { Home, FileText, PlusCircle, Archive, LogOut, User, Send, Menu, X } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { signOut } from "next-auth/react";
-import { useTransition } from "react";
+import { useTransition, useState } from "react";
 
 interface AppSidebarProps {
   user: {
@@ -38,6 +38,7 @@ export function AppSidebar({ user, inboxCount = 0 }: AppSidebarProps) {
   const searchParams = useSearchParams();
   const scope = searchParams.get("scope");
   const [isPending, startTransition] = useTransition();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const handleLogout = () => {
     startTransition(async () => {
@@ -46,8 +47,40 @@ export function AppSidebar({ user, inboxCount = 0 }: AppSidebarProps) {
   };
 
   return (
-    <aside className="fixed left-0 top-0 z-50 hidden h-full w-64 border-r border-slate-800 bg-slate-950 lg:block">
+    <>
+      {/* Mobile menu button */}
+      <button
+        onClick={() => setIsMobileMenuOpen(true)}
+        className="fixed left-4 top-4 z-40 flex h-12 w-12 items-center justify-center rounded-xl border border-slate-800 bg-slate-950 text-white shadow-lg lg:hidden"
+        aria-label="Открыть меню"
+      >
+        <Menu className="h-6 w-6" />
+      </button>
+
+      {/* Mobile overlay */}
+      {isMobileMenuOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm lg:hidden"
+          onClick={() => setIsMobileMenuOpen(false)}
+        />
+      )}
+
+      {/* Sidebar */}
+      <aside
+        className={`fixed left-0 top-0 z-50 h-full w-64 border-r border-slate-800 bg-slate-950 transition-transform duration-300 lg:translate-x-0 ${
+          isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"
+        } lg:block`}
+      >
       <div className="flex h-full flex-col p-4">
+        {/* Mobile close button */}
+        <button
+          onClick={() => setIsMobileMenuOpen(false)}
+          className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white lg:hidden"
+          aria-label="Закрыть меню"
+        >
+          <X className="h-5 w-5" />
+        </button>
+
         {/* Logo */}
         <div className="mb-6 px-2">
           <h1 className="bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-2xl font-bold text-transparent">
@@ -105,6 +138,7 @@ export function AppSidebar({ user, inboxCount = 0 }: AppSidebarProps) {
               <Link
                 key={item.name}
                 href={item.href}
+                onClick={() => setIsMobileMenuOpen(false)}
                 className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all ${
                   isActive
                     ? "bg-emerald-500/10 text-emerald-400"
@@ -126,6 +160,7 @@ export function AppSidebar({ user, inboxCount = 0 }: AppSidebarProps) {
 
           <Link
             href="/documents/new"
+            onClick={() => setIsMobileMenuOpen(false)}
             className={`flex items-center gap-3 rounded-lg bg-gradient-to-r from-emerald-600 to-cyan-600 px-3 py-2 text-sm font-semibold text-white shadow-lg transition-all hover:from-emerald-700 hover:to-cyan-700 ${
               pathname === "/documents/new" ? "ring-2 ring-emerald-400 ring-offset-2 ring-offset-slate-950" : ""
             }`}
@@ -150,5 +185,6 @@ export function AppSidebar({ user, inboxCount = 0 }: AppSidebarProps) {
         </div>
       </div>
     </aside>
+    </>
   );
 }

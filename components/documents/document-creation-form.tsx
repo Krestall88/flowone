@@ -228,14 +228,14 @@ export function DocumentCreationForm({ users, currentUser }: DocumentCreationFor
   return (
     <form onSubmit={handleSubmit} className="flex min-h-screen flex-col lg:flex-row">
       {/* Left column - Document editor (66%) */}
-      <div className="flex-1 border-r border-slate-800 p-6 lg:w-2/3 lg:p-8">
-        <div className="mx-auto max-w-3xl space-y-6">
+      <div className="flex-1 border-b border-slate-800 p-4 sm:p-6 lg:w-2/3 lg:border-b-0 lg:border-r lg:p-8">
+        <div className="mx-auto max-w-3xl space-y-4 sm:space-y-6">
           {/* Header */}
           <div className="space-y-2">
-            <h1 className="bg-gradient-to-r from-emerald-400 via-cyan-400 to-blue-400 bg-clip-text text-3xl font-bold text-transparent lg:text-4xl">
+            <h1 className="bg-gradient-to-r from-emerald-400 via-cyan-400 to-blue-400 bg-clip-text text-2xl font-bold text-transparent sm:text-3xl lg:text-4xl">
               Новая служебная записка
             </h1>
-            <p className="text-base text-slate-400 lg:text-lg">
+            <p className="text-sm text-slate-400 sm:text-base lg:text-lg">
               Создайте документ — он улетит по маршруту за секунды 🚀
             </p>
           </div>
@@ -250,7 +250,7 @@ export function DocumentCreationForm({ users, currentUser }: DocumentCreationFor
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="Например: Заявка на закупку муки 50 тонн"
-              className="h-12 border-slate-700 bg-slate-900/50 text-base text-white placeholder:text-slate-500 lg:h-14 lg:text-lg"
+              className="h-11 border-slate-700 bg-slate-900/50 text-sm text-white placeholder:text-slate-500 sm:h-12 sm:text-base lg:h-14 lg:text-lg"
               required
             />
           </div>
@@ -328,10 +328,10 @@ export function DocumentCreationForm({ users, currentUser }: DocumentCreationFor
       </div>
 
       {/* Right column - Workflow builder (33%) */}
-      <div className="w-full space-y-6 p-6 lg:w-1/3 lg:p-8">
+      <div className="w-full space-y-4 p-4 sm:space-y-6 sm:p-6 lg:w-1/3 lg:p-8">
         <div className="space-y-4">
           <div>
-            <h2 className="mb-1 text-xl font-bold text-white lg:text-2xl">Маршрут</h2>
+            <h2 className="mb-1 text-lg font-bold text-white sm:text-xl lg:text-2xl">Маршрут</h2>
             <p className="text-sm text-slate-400">
               Выберите сотрудников для согласования
             </p>

@@ -169,21 +169,21 @@ export default async function DashboardPage({
       />
 
       <main className="lg:ml-64">
-        <div className="mx-auto max-w-7xl px-6 py-8">
+        <div className="mx-auto max-w-7xl px-4 py-20 sm:px-6 lg:py-8">
           {/* Header */}
-          <div className="mb-8">
-            <div className="mb-4 flex items-center gap-3">
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500/20 to-cyan-500/20">
+          <div className="mb-6 sm:mb-8">
+            <div className="mb-4 flex items-center gap-2 sm:gap-3">
+              <div className="hidden h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500/20 to-cyan-500/20 sm:flex">
                 <ScopeIcon className="h-6 w-6 text-emerald-400" />
               </div>
               <div>
-                <h1 className="text-3xl font-bold text-white">{currentScope.label}</h1>
+                <h1 className="text-2xl font-bold text-white sm:text-3xl">{currentScope.label}</h1>
                 <p className="text-sm text-slate-400">{currentScope.description}</p>
               </div>
             </div>
 
             {/* Stats cards */}
-            <div className="grid gap-4 sm:grid-cols-3">
+            <div className="grid gap-3 sm:grid-cols-3 sm:gap-4">
               {(Object.entries(scopeConfig) as [ScopeKey, (typeof scopeConfig)[ScopeKey]][]).map(
                 ([key, cfg]) => {
                   const Icon = cfg.icon;

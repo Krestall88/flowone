@@ -34,7 +34,7 @@ export default async function LoginPage() {
         <div className="absolute left-1/2 top-1/2 h-96 w-96 animate-pulse rounded-full bg-emerald-500/10 blur-3xl delay-500" />
       </div>
 
-      <div className="relative z-10 mx-auto flex min-h-screen max-w-7xl flex-col gap-12 px-6 py-16 lg:flex-row lg:items-center lg:gap-16">
+      <div className="relative z-10 mx-auto flex min-h-screen max-w-7xl flex-col gap-8 px-4 py-12 sm:px-6 sm:py-16 lg:flex-row lg:items-center lg:gap-16">
         {/* Left section - Hero */}
         <section className="flex-1 space-y-8 text-white">
           <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/5 px-4 py-2 backdrop-blur-sm">
@@ -45,17 +45,17 @@ export default async function LoginPage() {
           </div>
 
           <div className="space-y-4">
-            <h1 className="bg-gradient-to-r from-white via-blue-100 to-cyan-100 bg-clip-text text-5xl font-bold leading-tight text-transparent lg:text-6xl">
+            <h1 className="bg-gradient-to-r from-white via-blue-100 to-cyan-100 bg-clip-text text-3xl font-bold leading-tight text-transparent sm:text-4xl lg:text-6xl">
               Согласование документов нового поколения
             </h1>
-            <p className="text-lg leading-relaxed text-slate-300 lg:max-w-xl">
+            <p className="text-base leading-relaxed text-slate-300 sm:text-lg lg:max-w-xl">
               Автоматизируйте маршруты, контролируйте статусы в реальном времени и получайте
               мгновенные уведомления. Всё в одном месте.
             </p>
           </div>
 
           {/* Features grid */}
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid gap-3 sm:grid-cols-2 sm:gap-4">
             {[
               {
                 icon: Zap,
@@ -80,7 +80,7 @@ export default async function LoginPage() {
             ].map((feature, idx) => (
               <div
                 key={idx}
-                className="group rounded-2xl border border-white/10 bg-white/5 p-5 backdrop-blur-sm transition-all hover:border-white/20 hover:bg-white/10"
+                className="group rounded-xl border border-white/10 bg-white/5 p-4 backdrop-blur-sm transition-all hover:border-white/20 hover:bg-white/10 sm:rounded-2xl sm:p-5"
               >
                 <div className="mb-3 inline-flex rounded-xl bg-gradient-to-br from-blue-500/20 to-cyan-500/20 p-3">
                   <feature.icon className="h-6 w-6 text-blue-300" />
