@@ -19,7 +19,7 @@ const formSchema = z.object({
 
 type FormValues = z.infer<typeof formSchema>;
 
-export function LoginForm({ className }: { className?: string }) {
+export function LoginForm({ className, callbackUrl = "/workflow" }: { className?: string; callbackUrl?: string }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const callbackError = searchParams.get("error");
@@ -57,7 +57,7 @@ export function LoginForm({ className }: { className?: string }) {
       const result = await signIn("credentials", {
         ...values,
         redirect: false,
-        callbackUrl: "/dashboard",
+        callbackUrl,
       });
 
       if (result?.error) {
@@ -66,7 +66,7 @@ export function LoginForm({ className }: { className?: string }) {
       }
 
       setSuccess(true);
-      router.push(result?.url ?? "/dashboard");
+      router.push(result?.url ?? callbackUrl);
       router.refresh();
     });
   };

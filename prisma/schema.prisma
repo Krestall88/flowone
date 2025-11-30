@@ -26,6 +26,9 @@ model User {
   watchingDocuments     DocumentWatcher[]
   tasks                 Task[]
   executionAssignments  ExecutionAssignment[]
+  // Журналы
+  temperatureEntries    TemperatureEntry[]
+  healthChecks          HealthCheck[]
 }
 
 model Document {
@@ -107,4 +110,66 @@ model ExecutionAssignment {
   updatedAt   DateTime         @updatedAt
 
   @@unique([documentId, assigneeId])
+}
+ 
+model Location {
+  id        Int         @id @default(autoincrement())
+  name      String
+  equipment Equipment[]
+}
+
+model Equipment {
+  id                 Int                @id @default(autoincrement())
+  name               String
+  locationId         Int
+  location           Location           @relation(fields: [locationId], references: [id])
+  /// Тип оборудования для фильтрации (например: fridge, freezer, showcase)
+  type               String             @default("fridge")
+  targetTemp         Int
+  tolerance          Int
+  temperatureEntries TemperatureEntry[]
+}
+
+model TemperatureEntry {
+  id          Int       @id @default(autoincrement())
+  equipmentId Int
+  equipment   Equipment @relation(fields: [equipmentId], references: [id])
+  date        DateTime  @default(now())
+  morning     Int?
+  day         Int?
+  evening     Int?
+  userId      Int
+  user        User      @relation(fields: [userId], references: [id])
+  signedAt    DateTime?
+
+  @@unique([equipmentId, date])
+}
+
+model Employee {
+  id                 Int                   @id @default(autoincrement())
+  name               String
+  /// Должность сотрудника, отображается в журнале здоровья
+  position           String?
+  /// Флаг активности: заблокированные сотрудники не отображаются в журналах
+  active             Boolean               @default(true)
+  healthCheckEntries HealthCheckEmployee[]
+}
+
+model HealthCheck {
+  id       Int                   @id @default(autoincrement())
+  date     DateTime              @default(now())
+  userId   Int
+  user     User                  @relation(fields: [userId], references: [id])
+  signedAt DateTime?
+  entries  HealthCheckEmployee[]
+}
+
+model HealthCheckEmployee {
+  id         Int         @id @default(autoincrement())
+  checkId    Int
+  check      HealthCheck @relation(fields: [checkId], references: [id])
+  employeeId Int
+  employee   Employee    @relation(fields: [employeeId], references: [id])
+  status     String
+  note       String?
 }

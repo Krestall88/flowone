@@ -10,19 +10,16 @@ import {
 import { authOptions } from "@/lib/auth";
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
-import { BadgeCheck, Shield, Workflow, Zap, Lock } from "lucide-react";
+import { BadgeCheck, Shield, Workflow, Zap, Lock, Activity } from "lucide-react";
 
 const sampleUsers = [
-  { role: "Директор", email: "director@example.com" },
-  { role: "Главный бухгалтер", email: "accountant@example.com" },
-  { role: "Рук. производства", email: "head@example.com" },
-  { role: "Снабженец", email: "employee1@example.com" },
+  { role: "Админ журналов", email: "journals-admin@example.com" },
 ];
 
-export default async function LoginPage() {
+export default async function JournalsLoginPage() {
   const session = await getServerSession(authOptions);
   if (session) {
-    redirect("/workflow");
+    redirect("/journals");
   }
 
   return (
@@ -38,19 +35,18 @@ export default async function LoginPage() {
         {/* Left section - Hero */}
         <section className="flex-1 space-y-8 text-white">
           <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/5 px-4 py-2 backdrop-blur-sm">
-            <Shield className="h-4 w-4 text-blue-400" />
+            <Activity className="h-4 w-4 text-emerald-400" />
             <span className="text-xs font-medium uppercase tracking-wider text-white/90">
-              FlowOne • Secure Workflow
+              FlowOne • Production Journals
             </span>
           </div>
 
           <div className="space-y-4">
-            <h1 className="bg-gradient-to-r from-white via-blue-100 to-cyan-100 bg-clip-text text-3xl font-bold leading-tight text-transparent sm:text-4xl lg:text-6xl">
-              Согласование документов нового поколения
+            <h1 className="bg-gradient-to-r from-white via-emerald-100 to-cyan-100 bg-clip-text text-3xl font-bold leading-tight text-transparent sm:text-4xl lg:text-6xl">
+              Производственные журналы FlowOne
             </h1>
             <p className="text-base leading-relaxed text-slate-300 sm:text-lg lg:max-w-xl">
-              Автоматизируйте маршруты, контролируйте статусы в реальном времени и получайте
-              мгновенные уведомления. Всё в одном месте.
+              Температурные режимы, здоровье сотрудников и санитарные журналы — в одном удобном цифровом интерфейсе.
             </p>
           </div>
 
@@ -59,31 +55,31 @@ export default async function LoginPage() {
             {[
               {
                 icon: Zap,
-                title: "Мгновенные уведомления",
-                description: "Telegram-бот уведомит всех участников процесса",
+                title: "Ежедневный контроль",
+                description: "Быстрый ввод показаний по всем холодильникам",
               },
               {
                 icon: BadgeCheck,
-                title: "Прозрачные статусы",
-                description: "Отслеживайте каждый шаг маршрута в реальном времени",
+                title: "Цифровые подписи",
+                description: "Фиксация ответственного и времени подписания",
               },
               {
                 icon: Workflow,
-                title: "Гибкие маршруты",
-                description: "Настраивайте сложные цепочки согласования",
+                title: "Здоровье персонала",
+                description: "Статусы сотрудников в один клик",
               },
               {
                 icon: Lock,
-                title: "Безопасность данных",
-                description: "Ролевая модель и контроль доступа",
+                title: "Соответствие требованиям",
+                description: "Подготовка к проверкам без бумажной рутины",
               },
             ].map((feature, idx) => (
               <div
                 key={idx}
                 className="group rounded-xl border border-white/10 bg-white/5 p-4 backdrop-blur-sm transition-all hover:border-white/20 hover:bg-white/10 sm:rounded-2xl sm:p-5"
               >
-                <div className="mb-3 inline-flex rounded-xl bg-gradient-to-br from-blue-500/20 to-cyan-500/20 p-3">
-                  <feature.icon className="h-6 w-6 text-blue-300" />
+                <div className="mb-3 inline-flex rounded-xl bg-gradient-to-br from-emerald-500/20 to-cyan-500/20 p-3">
+                  <feature.icon className="h-6 w-6 text-emerald-300" />
                 </div>
                 <h3 className="mb-1 font-semibold text-white">{feature.title}</h3>
                 <p className="text-sm leading-relaxed text-slate-400">{feature.description}</p>
@@ -96,14 +92,14 @@ export default async function LoginPage() {
             <div className="flex items-center gap-2">
               <div className="h-2 w-2 animate-pulse rounded-full bg-emerald-400" />
               <p className="text-xs font-medium uppercase tracking-wider text-white/70">
-                Тестовые аккаунты
+                Тестовый аккаунт журналов
               </p>
             </div>
             <SampleUsersPanel users={sampleUsers} />
             <div className="flex items-center gap-2 rounded-lg bg-white/5 px-3 py-2">
               <Lock className="h-4 w-4 text-slate-400" />
               <p className="text-sm text-slate-300">
-                Пароль для всех: <span className="font-mono font-semibold text-white">password</span>
+                Пароль: <span className="font-mono font-semibold text-white">password</span>
               </p>
             </div>
           </div>
@@ -113,16 +109,16 @@ export default async function LoginPage() {
         <section className="flex-1 lg:max-w-md">
           <Card className="border-slate-800 bg-slate-900/80 text-white shadow-2xl backdrop-blur-xl">
             <CardHeader className="space-y-3 pb-6">
-              <div className="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500">
+              <div className="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500 to-cyan-500">
                 <Shield className="h-6 w-6 text-white" />
               </div>
-              <CardTitle className="text-2xl font-bold">Вход в систему</CardTitle>
+              <CardTitle className="text-2xl font-bold">Вход в журналы</CardTitle>
               <CardDescription className="text-slate-400">
-                Используйте рабочую почту и пароль для доступа к вашим документам
+                Используйте логин администратора журналов для доступа к модулям
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <LoginForm />
+              <LoginForm callbackUrl="/journals" />
             </CardContent>
           </Card>
 
@@ -130,7 +126,7 @@ export default async function LoginPage() {
           <div className="mt-6 text-center">
             <p className="text-sm text-slate-400">
               Нужна помощь?{" "}
-              <a href="#" className="font-medium text-blue-400 hover:text-blue-300">
+              <a href="#" className="font-medium text-emerald-400 hover:text-emerald-300">
                 Свяжитесь с поддержкой
               </a>
             </p>
@@ -142,7 +138,7 @@ export default async function LoginPage() {
       <div className="absolute bottom-0 left-0 right-0 z-10 border-t border-white/5 bg-slate-950/50 backdrop-blur-sm">
         <div className="mx-auto max-w-7xl px-6 py-4">
           <p className="text-center text-xs text-slate-500">
-            © 2025 FlowOne. Система электронного документооборота.
+            © 2025 FlowOne. Модуль производственных журналов.
           </p>
         </div>
       </div>

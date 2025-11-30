@@ -27,9 +27,9 @@ const ROLE_LABELS: Record<string, string> = {
 };
 
 const navigation = [
-  { name: "Входящие", href: "/dashboard", icon: Home, exact: true, showBadge: true },
-  { name: "На согласовании", href: "/dashboard?scope=in_progress", icon: FileText, exact: false },
-  { name: "Архив", href: "/dashboard?scope=archive", icon: Archive, exact: false },
+  { name: "Входящие", href: "/workflow", icon: Home, exact: true, showBadge: true },
+  { name: "На согласовании", href: "/workflow?scope=in_progress", icon: FileText, exact: false },
+  { name: "Архив", href: "/workflow?scope=archive", icon: Archive, exact: false },
   { name: "Telegram", href: "/telegram", icon: Send, exact: true },
 ];
 

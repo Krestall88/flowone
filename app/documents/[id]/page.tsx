@@ -176,7 +176,7 @@ export default async function DocumentPage({ params }: DocumentPageProps) {
           size="sm"
           className="mb-6 text-slate-400 hover:text-white"
         >
-          <Link href="/dashboard">
+          <Link href="/workflow">
             <ArrowLeft className="mr-2 h-4 w-4" />
             Назад к дашборду
           </Link>

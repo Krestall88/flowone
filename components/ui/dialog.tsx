@@ -44,6 +44,12 @@ const DialogContent = React.forwardRef<
       {...props}
     >
       {children}
+      <DialogPrimitive.Close
+        className="absolute right-4 top-4 rounded-full text-muted-foreground opacity-70 transition hover:opacity-100 hover:text-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background"
+        aria-label="Закрыть"
+      >
+        <X className="h-4 w-4" />
+      </DialogPrimitive.Close>
     </DialogPrimitive.Content>
   </DialogPortal>
 ))

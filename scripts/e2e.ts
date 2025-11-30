@@ -65,7 +65,7 @@ class ApiClient {
     form.append("csrfToken", csrfData.csrfToken);
     form.append("email", email);
     form.append("password", password);
-    form.append("callbackUrl", "/dashboard");
+    form.append("callbackUrl", "/workflow");
     form.append("json", "true");
 
     const loginRes = await fetch(`${BASE_URL}/api/auth/callback/credentials?json=true`, {
