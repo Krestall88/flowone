@@ -10,7 +10,8 @@
     "db:push": "prisma db push",
     "db:seed": "prisma db seed",
     "postinstall": "prisma generate",
-    "db:cleanup-docs": "tsx scripts/cleanup-documents.ts"
+    "db:cleanup-docs": "tsx scripts/cleanup-documents.ts",
+    "db:reset-journals": "tsx scripts/reset-journals.ts"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

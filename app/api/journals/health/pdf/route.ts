@@ -1,19 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
-import { format, parseISO, startOfToday } from "date-fns";
-import { ru } from "date-fns/locale";
+import { parseISO, startOfMonth, endOfMonth, getDaysInMonth, getDate } from "date-fns";
 
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/session";
-import { renderHealthJournalPdf } from "./render";
+import { renderHealthJournalPdf, MONTHS_RU, type EmployeeRow } from "./render";
 
 export async function GET(req: NextRequest) {
-  const user = await requireUser();
+  await requireUser();
 
   const url = new URL(req.url);
   const dateParam = url.searchParams.get("date");
 
-  const today = startOfToday();
-  let selectedDate = today;
+  // Определяем месяц по переданной дате (или текущий)
+  let selectedDate = new Date();
   if (dateParam) {
     const parsed = parseISO(dateParam);
     if (!Number.isNaN(parsed.getTime())) {
@@ -21,79 +20,78 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  const isoDate = format(selectedDate, "yyyy-MM-dd");
-  const humanDate = format(selectedDate, "d MMMM yyyy", { locale: ru });
+  const year = selectedDate.getFullYear();
+  const month = selectedDate.getMonth() + 1; // 1-12
+  const monthName = MONTHS_RU[month] ?? String(month);
+  const daysInMonth = getDaysInMonth(selectedDate);
 
-  const dayStart = new Date(selectedDate);
-  dayStart.setHours(0, 0, 0, 0);
-  const dayEnd = new Date(selectedDate);
-  dayEnd.setHours(23, 59, 59, 999);
+  const monthStart = startOfMonth(selectedDate);
+  const monthEnd = endOfMonth(selectedDate);
 
+  // Загружаем всех активных сотрудников
+  const allEmployees = await prisma.employee.findMany({
+    where: {
+      active: true,
+    },
+    orderBy: {
+      name: "asc",
+    },
+  });
+
+  // Загружаем все записи журнала здоровья за месяц
   const checks = await prisma.healthCheck.findMany({
     where: {
       date: {
-        gte: dayStart,
-        lte: dayEnd,
+        gte: monthStart,
+        lte: monthEnd,
       },
     },
     include: {
-      entries: {
-        include: {
-          employee: true,
-        },
-      },
-    },
-    orderBy: {
-      date: "asc",
+      entries: true,
     },
   });
 
-  const allEntries = checks.flatMap((check) =>
-    check.entries.map((entry) => ({
-      employeeId: entry.employeeId,
-      employeeName: entry.employee.name,
-      status: entry.status,
-      note: entry.note ?? null,
-    })),
-  );
+  // Группируем записи по employeeId и дню месяца
+  // Берём последнюю запись за день, если их несколько
+  const entriesMap = new Map<number, Record<number, string>>();
 
-  const latestByEmployee = new Map<
-    number,
-    {
-      employeeId: number;
-      employeeName: string;
-      status: string;
-      note: string | null;
+  for (const check of checks) {
+    const dayOfMonth = getDate(check.date);
+
+    for (const entry of check.entries) {
+      const empId = entry.employeeId;
+
+      if (!entriesMap.has(empId)) {
+        entriesMap.set(empId, {});
+      }
+
+      const empDays = entriesMap.get(empId)!;
+      empDays[dayOfMonth] = entry.status;
     }
-  >();
-
-  for (const entry of allEntries) {
-    latestByEmployee.set(entry.employeeId, entry);
   }
 
-  const employees = Array.from(latestByEmployee.values()).sort((a, b) =>
-    a.employeeName.localeCompare(b.employeeName, "ru"),
-  );
-
-  const statusCounts = employees.reduce(
-    (acc, entry) => {
-      acc[entry.status] = (acc[entry.status] ?? 0) + 1;
-      return acc;
-    },
-    {} as Record<string, number>,
-  );
+  // Формируем данные для PDF
+  const employees: EmployeeRow[] = allEmployees.map((emp: typeof allEmployees[number]) => ({
+    employeeId: emp.id,
+    employeeName: emp.name,
+    position: emp.position ?? "",
+    days: entriesMap.get(emp.id) ?? {},
+  }));
 
   const pdfBuffer = await renderHealthJournalPdf({
-    userName: user.name ?? null,
-    humanDate,
+    organizationName: "", // Можно добавить настройку организации позже
+    monthName,
+    year,
+    daysInMonth,
     employees,
-    statusCounts,
   });
+
+  const fileName = `health_journal_${year}_${String(month).padStart(2, "0")}.pdf`;
 
   return new NextResponse(pdfBuffer as any, {
     headers: {
       "Content-Type": "application/pdf",
-      "Content-Disposition": `attachment; filename="health_journal_${isoDate}.pdf"`,
+      "Content-Disposition": `attachment; filename="${fileName}"`,
     },
   });
 }

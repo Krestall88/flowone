@@ -1,19 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
-import { format, parseISO, startOfToday } from "date-fns";
-import { ru } from "date-fns/locale";
+import { parseISO, startOfMonth, endOfMonth, getDaysInMonth, getDate } from "date-fns";
 
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/session";
-import { renderTemperatureJournalPdf } from "./render";
+import { renderTemperatureJournalPdf, MONTHS_RU, type EquipmentRow } from "./render";
 
 export async function GET(req: NextRequest) {
-  const user = await requireUser();
+  await requireUser();
 
   const url = new URL(req.url);
   const dateParam = url.searchParams.get("date");
 
-  const today = startOfToday();
-  let selectedDate = today;
+  // Определяем месяц по переданной дате (или текущий)
+  let selectedDate = new Date();
   if (dateParam) {
     const parsed = parseISO(dateParam);
     if (!Number.isNaN(parsed.getTime())) {
@@ -21,94 +20,74 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  const isoDate = format(selectedDate, "yyyy-MM-dd");
-  const humanDate = format(selectedDate, "d MMMM yyyy", { locale: ru });
+  const year = selectedDate.getFullYear();
+  const month = selectedDate.getMonth() + 1; // 1-12
+  const monthName = MONTHS_RU[month] ?? String(month);
+  const daysInMonth = getDaysInMonth(selectedDate);
 
-  const dayStart = new Date(selectedDate);
-  dayStart.setHours(0, 0, 0, 0);
-  const dayEnd = new Date(selectedDate);
-  dayEnd.setHours(23, 59, 59, 999);
+  const monthStart = startOfMonth(selectedDate);
+  const monthEnd = endOfMonth(selectedDate);
 
+  // Загружаем всё оборудование с локациями
+  const allEquipment = await prisma.equipment.findMany({
+    include: {
+      location: true,
+    },
+    orderBy: [
+      { location: { name: "asc" } },
+      { name: "asc" },
+    ],
+  });
+
+  // Загружаем все записи температур за месяц
   const entries = await prisma.temperatureEntry.findMany({
     where: {
       date: {
-        gte: dayStart,
-        lte: dayEnd,
+        gte: monthStart,
+        lte: monthEnd,
       },
-    },
-    include: {
-      equipment: {
-        include: {
-          location: true,
-        },
-      },
-    },
-    orderBy: {
-      equipmentId: "asc",
     },
   });
 
-  const grouped = entries.reduce(
-    (acc, entry) => {
-      const locId = entry.equipment.locationId;
-      const locName = entry.equipment.location.name;
-      const key = String(locId);
+  // Группируем записи по equipmentId и дню месяца
+  const entriesMap = new Map<number, Record<number, { morning: number | null; evening: number | null }>>();
 
-      if (!acc[key]) {
-        acc[key] = {
-          id: locId,
-          name: locName,
-          items: [] as {
-            equipmentName: string;
-            targetTemp: number;
-            tolerance: number;
-            morning: number | null;
-            day: number | null;
-            evening: number | null;
-          }[],
-        };
-      }
+  for (const entry of entries) {
+    const eqId = entry.equipmentId;
+    const dayOfMonth = getDate(entry.date);
 
-      acc[key].items.push({
-        equipmentName: entry.equipment.name,
-        targetTemp: entry.equipment.targetTemp,
-        tolerance: entry.equipment.tolerance,
-        morning: entry.morning,
-        day: entry.day,
-        evening: entry.evening,
-      });
+    if (!entriesMap.has(eqId)) {
+      entriesMap.set(eqId, {});
+    }
 
-      return acc;
-    },
-    {} as Record<
-      string,
-      {
-        id: number;
-        name: string;
-        items: {
-          equipmentName: string;
-          targetTemp: number;
-          tolerance: number;
-          morning: number | null;
-          day: number | null;
-          evening: number | null;
-        }[];
-      }
-    >,
-  );
+    const eqDays = entriesMap.get(eqId)!;
+    eqDays[dayOfMonth] = {
+      morning: entry.morning,
+      evening: entry.evening,
+    };
+  }
 
-  const locations = Object.values(grouped);
+  // Формируем данные для PDF
+  const equipment: EquipmentRow[] = allEquipment.map((eq: typeof allEquipment[number]) => ({
+    locationName: eq.location.name,
+    equipmentName: eq.name,
+    days: entriesMap.get(eq.id) ?? {},
+  }));
 
   const pdfBuffer = await renderTemperatureJournalPdf({
-    userName: user.name ?? null,
-    humanDate,
-    locations,
+    organizationName: "", // Можно добавить настройку организации позже
+    monthName,
+    year,
+    daysInMonth,
+    equipment,
   });
+
+  const fileName = `temperature_journal_${year}_${String(month).padStart(2, "0")}.pdf`;
 
   return new NextResponse(pdfBuffer as any, {
     headers: {
       "Content-Type": "application/pdf",
-      "Content-Disposition": `attachment; filename="temperature_journal_${isoDate}.pdf"`,
+      "Content-Disposition": `attachment; filename="${fileName}"`,
     },
   });
 }
