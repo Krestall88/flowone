@@ -1,8 +1,9 @@
-import { addDays, format, parseISO, startOfToday } from "date-fns";
+import { format } from "date-fns";
 import { ru } from "date-fns/locale";
 
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/session";
+import { parseToUTCDate, todayUTC, formatDateISO, getDayRangeUTC } from "@/lib/date-utils";
 import { JournalsSidebar } from "@/components/journals/journals-sidebar";
 import { TemperatureJournal } from "@/components/journals/temperature-journal";
 import { JournalsDateToolbar } from "@/components/journals/journals-date-toolbar";
@@ -14,19 +15,15 @@ export default async function TemperatureJournalPage({
 }) {
   const user = await requireUser();
 
-  const today = startOfToday();
   const dateParam = searchParams?.date;
 
-  let selectedDate = today;
-  if (dateParam) {
-    const parsed = parseISO(dateParam);
-    if (!Number.isNaN(parsed.getTime())) {
-      selectedDate = parsed;
-    }
+  // Нормализуем дату к UTC полночи
+  let selectedDate = todayUTC();
+  if (dateParam && dateParam.match(/^\d{4}-\d{2}-\d{2}$/)) {
+    selectedDate = parseToUTCDate(dateParam);
   }
 
-  const start = selectedDate;
-  const end = addDays(selectedDate, 1);
+  const { start, end } = getDayRangeUTC(selectedDate);
 
   const [locations, equipment, tempEntries] = await Promise.all([
     prisma.location.findMany({
@@ -88,7 +85,7 @@ export default async function TemperatureJournalPage({
 	  ? format(lastSignedAt, "d MMMM yyyy HH:mm", { locale: ru })
 	  : null;
 
-  const isoDate = format(selectedDate, "yyyy-MM-dd");
+  const isoDate = formatDateISO(selectedDate);
 
   return (
     <div className="relative min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">

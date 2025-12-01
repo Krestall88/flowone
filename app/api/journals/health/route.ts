@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { parseISO, startOfToday } from "date-fns";
 
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/session";
+import { parseToUTCDate, todayUTC } from "@/lib/date-utils";
 
 export async function POST(req: NextRequest) {
   try {
@@ -61,12 +61,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Нет данных для сохранения" }, { status: 400 });
     }
 
-    let day = startOfToday();
-    if (typeof rawDate === "string") {
-      const parsed = parseISO(rawDate);
-      if (!Number.isNaN(parsed.getTime())) {
-        day = parsed;
-      }
+    // Нормализуем дату к UTC полночи, чтобы dev и prod видели одни записи
+    let day = todayUTC();
+    if (typeof rawDate === "string" && rawDate.match(/^\d{4}-\d{2}-\d{2}$/)) {
+      day = parseToUTCDate(rawDate);
     }
 
     const now = new Date();

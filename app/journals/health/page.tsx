@@ -1,8 +1,9 @@
-import { format, parseISO, startOfToday } from "date-fns";
+import { format } from "date-fns";
 import { ru } from "date-fns/locale";
 
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/session";
+import { parseToUTCDate, todayUTC, formatDateISO } from "@/lib/date-utils";
 import { JournalsSidebar } from "@/components/journals/journals-sidebar";
 import { HealthJournal } from "@/components/journals/health-journal";
 import { JournalsDateToolbar } from "@/components/journals/journals-date-toolbar";
@@ -14,18 +15,15 @@ export default async function HealthJournalPage({
 }) {
   const user = await requireUser();
 
-  const today = startOfToday();
   const dateParam = searchParams?.date;
 
-  let selectedDate = today;
-  if (dateParam) {
-    const parsed = parseISO(dateParam);
-    if (!Number.isNaN(parsed.getTime())) {
-      selectedDate = parsed;
-    }
+  // Нормализуем дату к UTC полночи
+  let selectedDate = todayUTC();
+  if (dateParam && dateParam.match(/^\d{4}-\d{2}-\d{2}$/)) {
+    selectedDate = parseToUTCDate(dateParam);
   }
 
-  const isoDate = format(selectedDate, "yyyy-MM-dd");
+  const isoDate = formatDateISO(selectedDate);
 
   const dbUser = await prisma.user.findUnique({
     where: {
