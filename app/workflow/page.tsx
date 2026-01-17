@@ -8,6 +8,8 @@ import { DocumentTable } from "@/components/dashboard/document-table";
 import { Card, CardContent } from "@/components/ui/card";
 import { AppSidebar } from "@/components/layout/app-sidebar";
 
+export const dynamic = 'force-dynamic';
+
 const scopeConfig = {
   inbox: {
     label: "Входящие",

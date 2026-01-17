@@ -1,6 +1,8 @@
 import { redirect } from "next/navigation";
 
 import { prisma } from "@/lib/prisma";
+
+export const dynamic = 'force-dynamic';
 import { isReadOnlyRole, requireUser } from "@/lib/session";
 import { getInboxCount } from "@/lib/inbox-count";
 import { AppSidebar } from "@/components/layout/app-sidebar";

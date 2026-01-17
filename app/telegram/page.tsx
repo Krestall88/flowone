@@ -5,6 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Bell, MessageSquare, Clock, CheckCircle } from "lucide-react";
 import { getInboxCount } from "@/lib/inbox-count";
 
+export const dynamic = 'force-dynamic';
+
 export default async function TelegramPage() {
   const user = await requireUser();
   const userId = Number(user.id);

@@ -8,6 +8,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 
+export const dynamic = 'force-dynamic';
+
 function getExpiryStatus(expiresAt: Date | null): "active" | "expiring" | "expired" | "no_expiry" {
   if (!expiresAt) return "no_expiry";
   const now = new Date();

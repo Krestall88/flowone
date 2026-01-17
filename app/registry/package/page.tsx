@@ -9,6 +9,8 @@ import { Badge } from "@/components/ui/badge";
 import { RegistryPackageActions } from "@/components/registry/registry-package-actions";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
 
+export const dynamic = 'force-dynamic';
+
 function getCanonicalObjectType(raw: string): string {
   const v = (raw ?? "").trim().toLowerCase();
   if (v === "chemicals" || v === "дезсредства" || v === "моющие" || v === "моющие и дезсредства" || v === "дезсредства и моющие") return "chemicals";

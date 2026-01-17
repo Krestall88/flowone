@@ -14,6 +14,8 @@ import { TemperatureChart } from "@/components/dashboard/temperature-chart";
 import { AppSidebar } from "@/components/layout/app-sidebar";
 import { getInboxCount } from "@/lib/inbox-count";
 
+export const dynamic = 'force-dynamic';
+
 type TemperatureEntryToday = Prisma.TemperatureEntryGetPayload<{
   select: {
     morning: true;
