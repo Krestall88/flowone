@@ -10,19 +10,20 @@ import {
 import { authOptions } from "@/lib/auth";
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
-import { BadgeCheck, Shield, Workflow, Zap, Lock } from "lucide-react";
+import { BadgeCheck, Shield, Workflow, Zap, Lock, ClipboardCheck, NotebookTabs } from "lucide-react";
 
 const sampleUsers = [
   { role: "Директор", email: "director@example.com" },
-  { role: "Главный бухгалтер", email: "accountant@example.com" },
   { role: "Рук. производства", email: "head@example.com" },
-  { role: "Снабженец", email: "employee1@example.com" },
+  { role: "Технолог", email: "technologist@example.com" },
+  { role: "Аудитор", email: "auditor@example.com" },
+  { role: "Сотрудник", email: "employee@example.com" },
 ];
 
 export default async function LoginPage() {
   const session = await getServerSession(authOptions);
   if (session) {
-    redirect("/workflow");
+    redirect("/dashboard");
   }
 
   return (
@@ -38,19 +39,19 @@ export default async function LoginPage() {
         {/* Left section - Hero */}
         <section className="flex-1 space-y-8 text-white">
           <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/5 px-4 py-2 backdrop-blur-sm">
-            <Shield className="h-4 w-4 text-blue-400" />
+            <Shield className="h-4 w-4 text-emerald-300" />
             <span className="text-xs font-medium uppercase tracking-wider text-white/90">
-              FlowOne • Secure Workflow
+              HACCP Control • Production Control
             </span>
           </div>
 
           <div className="space-y-4">
             <h1 className="bg-gradient-to-r from-white via-blue-100 to-cyan-100 bg-clip-text text-3xl font-bold leading-tight text-transparent sm:text-4xl lg:text-6xl">
-              Согласование документов нового поколения
+              Контроль HACCP и готовность к проверкам
             </h1>
             <p className="text-base leading-relaxed text-slate-300 sm:text-lg lg:max-w-xl">
-              Автоматизируйте маршруты, контролируйте статусы в реальном времени и получайте
-              мгновенные уведомления. Всё в одном месте.
+              Журналы санитарного контроля, документы для проверок и согласование — в одном
+              интерфейсе, удобно на планшете и прозрачно для аудита.
             </p>
           </div>
 
@@ -58,24 +59,24 @@ export default async function LoginPage() {
           <div className="grid gap-3 sm:grid-cols-2 sm:gap-4">
             {[
               {
-                icon: Zap,
-                title: "Мгновенные уведомления",
-                description: "Telegram-бот уведомит всех участников процесса",
+                icon: NotebookTabs,
+                title: "Журналы HACCP",
+                description: "Ежедневные отметки, история, отчёты и контроль заполнения",
               },
               {
-                icon: BadgeCheck,
-                title: "Прозрачные статусы",
-                description: "Отслеживайте каждый шаг маршрута в реальном времени",
+                icon: ClipboardCheck,
+                title: "Документы для проверок",
+                description: "Реестр сертификатов/разрешений со сроками и быстрым поиском",
               },
               {
                 icon: Workflow,
-                title: "Гибкие маршруты",
-                description: "Настраивайте сложные цепочки согласования",
+                title: "Согласование документов",
+                description: "Контроль задач и статусов по каждому документу",
               },
               {
-                icon: Lock,
-                title: "Безопасность данных",
-                description: "Ролевая модель и контроль доступа",
+                icon: Zap,
+                title: "Быстро и понятно",
+                description: "Крупные элементы, минимум кликов, отлично на производстве",
               },
             ].map((feature, idx) => (
               <div
@@ -113,12 +114,12 @@ export default async function LoginPage() {
         <section className="flex-1 lg:max-w-md">
           <Card className="border-slate-800 bg-slate-900/80 text-white shadow-2xl backdrop-blur-xl">
             <CardHeader className="space-y-3 pb-6">
-              <div className="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500">
+              <div className="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500 to-cyan-500">
                 <Shield className="h-6 w-6 text-white" />
               </div>
               <CardTitle className="text-2xl font-bold">Вход в систему</CardTitle>
               <CardDescription className="text-slate-400">
-                Используйте рабочую почту и пароль для доступа к вашим документам
+                Используйте рабочую почту и пароль для доступа к панели контроля и журналам
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -142,7 +143,7 @@ export default async function LoginPage() {
       <div className="absolute bottom-0 left-0 right-0 z-10 border-t border-white/5 bg-slate-950/50 backdrop-blur-sm">
         <div className="mx-auto max-w-7xl px-6 py-4">
           <p className="text-center text-xs text-slate-500">
-            © 2025 FlowOne. Система электронного документооборота.
+            © 2025 HACCP Control / Production Control.
           </p>
         </div>
       </div>

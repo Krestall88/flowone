@@ -1,12 +1,18 @@
-import { requireUser } from "@/lib/session";
+import { isReadOnlyRole, requireUser } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import { AppSidebar } from "@/components/layout/app-sidebar";
 import { DocumentCreationForm } from "@/components/documents/document-creation-form";
 import { getInboxCount } from "@/lib/inbox-count";
+import { redirect } from "next/navigation";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
 
 export default async function NewDocumentPage() {
   const user = await requireUser();
   const userId = Number(user.id);
+
+  if (isReadOnlyRole(user.role)) {
+    redirect("/documents");
+  }
 
   const [users, inboxCount] = await Promise.all([
     prisma.user.findMany({
@@ -36,7 +42,9 @@ export default async function NewDocumentPage() {
       />
       
       <main className="lg:ml-64">
-        <DocumentCreationForm 
+        <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:py-12">
+          <Breadcrumb items={[{ label: "Документы", href: "/documents" }, { label: "Создать документ" }]} />
+          <DocumentCreationForm 
           users={users} 
           currentUser={{
             id: user.id,
@@ -45,6 +53,7 @@ export default async function NewDocumentPage() {
             role: user.role,
           }} 
         />
+        </div>
       </main>
     </div>
   );

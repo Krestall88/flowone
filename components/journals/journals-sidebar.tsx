@@ -31,7 +31,7 @@ export function JournalsSidebar({ user }: JournalsSidebarProps) {
 
   const handleLogout = () => {
     startTransition(async () => {
-      await signOut({ callbackUrl: "/journals/login" });
+      await signOut({ callbackUrl: "/login" });
     });
   };
 

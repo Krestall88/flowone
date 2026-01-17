@@ -4,9 +4,11 @@ import { ru } from "date-fns/locale";
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/session";
 import { parseToUTCDate, todayUTC, formatDateISO, getDayRangeUTC } from "@/lib/date-utils";
-import { JournalsSidebar } from "@/components/journals/journals-sidebar";
+import { getInboxCount } from "@/lib/inbox-count";
+import { AppSidebar } from "@/components/layout/app-sidebar";
 import { TemperatureJournal } from "@/components/journals/temperature-journal";
 import { JournalsDateToolbar } from "@/components/journals/journals-date-toolbar";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
 
 export default async function TemperatureJournalPage({
   searchParams,
@@ -14,6 +16,7 @@ export default async function TemperatureJournalPage({
   searchParams?: { date?: string };
 }) {
   const user = await requireUser();
+  const userId = Number(user.id);
 
   const dateParam = searchParams?.date;
 
@@ -25,7 +28,8 @@ export default async function TemperatureJournalPage({
 
   const { start, end } = getDayRangeUTC(selectedDate);
 
-  const [locations, equipment, tempEntries] = await Promise.all([
+  const [inboxCount, locations, equipment, tempEntries] = await Promise.all([
+    getInboxCount(userId),
     prisma.location.findMany({
       orderBy: { name: "asc" },
     }),
@@ -89,17 +93,19 @@ export default async function TemperatureJournalPage({
 
   return (
     <div className="relative min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
-      <JournalsSidebar
+      <AppSidebar
         user={{
           id: user.id,
           name: user.name ?? null,
           email: user.email ?? null,
           role: user.role,
         }}
+        inboxCount={inboxCount}
       />
 
       <main className="lg:ml-64">
         <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6 lg:py-12">
+          <Breadcrumb items={[{ label: "Журналы", href: "/journals" }, { label: "Температуры" }]} />
           <div className="mb-6 space-y-2">
             <h1 className="bg-gradient-to-r from-white via-emerald-100 to-cyan-100 bg-clip-text text-2xl font-bold text-transparent sm:text-3xl">
               Учёт температурных режимов холодильного оборудования

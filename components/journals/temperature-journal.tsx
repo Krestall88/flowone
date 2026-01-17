@@ -1,7 +1,10 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
-import { format, parseISO } from "date-fns";
+import { useEffect, useMemo, useState, useTransition } from "react";
+import Link from "next/link";
+import { useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
+import { format, isSameDay, parseISO, startOfToday } from "date-fns";
 import { ru } from "date-fns/locale";
 import { ThermometerSun, CheckCircle2, Plus, ChevronDown } from "lucide-react";
 
@@ -45,6 +48,10 @@ interface TemperatureJournalProps {
 }
 
 export function TemperatureJournal({ userName, locations, entries, date, signedLabel }: TemperatureJournalProps) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const documentId = searchParams.get("documentId");
+
   const [values, setValues] = useState<TemperatureEquipmentEntry[]>(entries);
   const [isPending, startTransition] = useTransition();
   const [success, setSuccess] = useState(false);
@@ -68,6 +75,7 @@ export function TemperatureJournal({ userName, locations, entries, date, signedL
   const [locationFilter, setLocationFilter] = useState<string>("all");
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [openLocations, setOpenLocations] = useState<Record<number, boolean>>({});
+  const [isDeviationsOpen, setIsDeviationsOpen] = useState(true);
 
   useEffect(() => {
     setValues(entries);
@@ -78,6 +86,29 @@ export function TemperatureJournal({ userName, locations, entries, date, signedL
   }, [entries, date]);
   const selectedDate = parseISO(date);
   const dateLabel = format(selectedDate, "d MMMM yyyy", { locale: ru });
+
+  const isToday = isSameDay(selectedDate, startOfToday());
+  const isReadOnly = !isToday;
+
+  const deviations = useMemo(() => {
+    const list: string[] = [];
+    values.forEach((entry) => {
+      const min = entry.targetTemp - entry.tolerance;
+      const max = entry.targetTemp + entry.tolerance;
+      ([
+        ["morning", "утро"],
+        ["day", "день"],
+        ["evening", "вечер"],
+      ] as const).forEach(([field, label]) => {
+        const temp = entry[field];
+        if (temp === null || Number.isNaN(temp)) return;
+        if (temp < min || temp > max) {
+          list.push(`${entry.locationName} / ${entry.name}, ${label}: ${temp}°C (норма ${min}…${max}°C)`);
+        }
+      });
+    });
+    return list;
+  }, [values]);
 
   const handleChange = (
     id: number,
@@ -123,9 +154,7 @@ export function TemperatureJournal({ userName, locations, entries, date, signedL
       setIsLocationDialogOpen(false);
       setNewLocationName("");
 
-      if (typeof window !== "undefined") {
-        window.location.reload();
-      }
+      router.refresh();
     } catch (err) {
       setLocationError(err instanceof Error ? err.message : "Ошибка добавления помещения");
     } finally {
@@ -182,9 +211,7 @@ export function TemperatureJournal({ userName, locations, entries, date, signedL
       setTargetTempInput("");
       setToleranceInput("");
 
-      if (typeof window !== "undefined") {
-        window.location.reload();
-      }
+      router.refresh();
     } catch (err) {
       setEquipmentError(err instanceof Error ? err.message : "Ошибка добавления оборудования");
     } finally {
@@ -193,6 +220,7 @@ export function TemperatureJournal({ userName, locations, entries, date, signedL
   };
 
   const handleSubmit = () => {
+    if (isReadOnly) return;
     setError(null);
     setSuccess(false);
     setWarnings([]);
@@ -201,6 +229,9 @@ export function TemperatureJournal({ userName, locations, entries, date, signedL
       try {
         const formData = new FormData();
         formData.append("date", date);
+        if (documentId && documentId.trim()) {
+          formData.append("documentId", documentId.trim());
+        }
 
         values.forEach((entry) => {
           if (entry.morning !== null && !Number.isNaN(entry.morning)) {
@@ -238,11 +269,15 @@ export function TemperatureJournal({ userName, locations, entries, date, signedL
 
         if (!res.ok) {
           const data = await res.json().catch(() => null);
+          if (res.status === 403 && data?.reason === "audit_mode_lock") {
+            throw new Error(data?.error ?? "Действие запрещено в режиме проверки");
+          }
           throw new Error(data?.error ?? "Не удалось сохранить журнал");
         }
 
         setWarnings(newWarnings);
         setSuccess(true);
+        router.refresh();
       } catch (err) {
         setError(err instanceof Error ? err.message : "Ошибка сохранения журнала");
       }
@@ -300,11 +335,57 @@ export function TemperatureJournal({ userName, locations, entries, date, signedL
 
   return (
     <div className="relative space-y-4 pb-24">
+      {isReadOnly && (
+        <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
+          Режим просмотра: записи можно вносить и подписывать только за текущий день.
+        </div>
+      )}
+
+      {deviations.length > 0 && (
+        <div className="rounded-xl border border-red-500/40 bg-red-500/10">
+          <button
+            type="button"
+            className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left"
+            onClick={() => setIsDeviationsOpen((prev) => !prev)}
+          >
+            <div className="min-w-0">
+              <p className="text-xs font-semibold uppercase tracking-wide text-red-200">Отклонения</p>
+              <p className="truncate text-sm text-red-100">
+                Значений вне нормы: <span className="font-semibold">{deviations.length}</span>
+              </p>
+            </div>
+            <ChevronDown
+              className={`h-5 w-5 text-red-200 transition-transform ${isDeviationsOpen ? "rotate-180" : ""}`}
+            />
+          </button>
+          {isDeviationsOpen && (
+            <div className="border-t border-red-500/30 px-4 py-3">
+              <ul className="space-y-1 text-xs text-red-100 sm:text-sm">
+                {deviations.map((w, i) => (
+                  <li key={i}>{w}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+      )}
+
       <div className="sticky top-0 z-20 -mx-4 flex flex-col gap-3 border-b border-slate-800 bg-slate-950/95 px-4 py-3 backdrop-blur sm:rounded-2xl sm:border">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <div className="space-y-1">
             <p className="text-[11px] uppercase tracking-wide text-slate-500">Дата</p>
             <p className="text-sm font-semibold text-white sm:text-base">{dateLabel}</p>
+            {documentId && documentId.trim() && (
+              <p className="mt-1 text-[11px] text-slate-300">
+                Привязано к документу{" "}
+                <Link
+                  href={`/documents/${documentId}`}
+                  className="font-semibold text-emerald-200 underline-offset-2 hover:underline"
+                >
+                  #{documentId}
+                </Link>
+              </p>
+            )}
             {signedLabel && (
               <p className="mt-1 flex items-center gap-1 text-[11px] text-emerald-300">
                 <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
@@ -363,6 +444,7 @@ export function TemperatureJournal({ userName, locations, entries, date, signedL
               <Button
                 type="button"
                 variant="outline"
+                disabled={isReadOnly}
                 className="h-8 rounded-lg border-slate-700 bg-slate-900/70 px-3 text-[11px] font-semibold text-slate-100 hover:border-emerald-500 hover:text-emerald-200"
               >
                 Добавить помещение
@@ -414,6 +496,7 @@ export function TemperatureJournal({ userName, locations, entries, date, signedL
               <Button
                 type="button"
                 variant="outline"
+                disabled={isReadOnly}
                 className="h-8 rounded-lg border-emerald-600/60 bg-emerald-600/10 px-3 text-[11px] font-semibold text-emerald-100 hover:bg-emerald-600/20"
               >
                 Добавить оборудование
@@ -586,6 +669,7 @@ export function TemperatureJournal({ userName, locations, entries, date, signedL
                                   value={value ?? ""}
                                   title={outOfRange ? "Отклонение от нормы!" : undefined}
                                   onChange={(e) => handleChange(equipment.id, field, e.target.value)}
+                                  disabled={isReadOnly}
                                 />
                               </div>
                             );
@@ -630,19 +714,24 @@ export function TemperatureJournal({ userName, locations, entries, date, signedL
         </div>
       )}
 
-      <div className="mt-2 flex justify-end">
-        <Button
-          type="button"
-          size="lg"
-          onClick={handleSubmit}
-          disabled={isPending}
-          className="min-w-[220px] gap-2 bg-emerald-600 text-base font-semibold shadow-emerald-500/40 hover:bg-emerald-500"
-        >
-          {isPending && (
-            <span className="h-4 w-4 animate-spin rounded-full border-2 border-emerald-200 border-t-transparent" />
-          )}
-          Сохранить и подписать
-        </Button>
+      <div className="sticky bottom-0 z-30 -mx-4 border-t border-slate-800 bg-slate-950/95 px-4 py-3 backdrop-blur sm:rounded-2xl sm:border">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <div className="text-xs text-slate-400">
+            {isReadOnly ? "Только просмотр" : "После нажатия журнал будет подписан ответственным"}
+          </div>
+          <Button
+            type="button"
+            size="lg"
+            onClick={handleSubmit}
+            disabled={isPending || isReadOnly}
+            className="w-full gap-2 bg-emerald-600 text-base font-semibold shadow-emerald-500/40 hover:bg-emerald-500 sm:w-auto sm:min-w-[260px]"
+          >
+            {isPending && (
+              <span className="h-4 w-4 animate-spin rounded-full border-2 border-emerald-200 border-t-transparent" />
+            )}
+            Подписать смену
+          </Button>
+        </div>
       </div>
 
       {/* Плавающая кнопка добавления оборудования */}
@@ -650,6 +739,7 @@ export function TemperatureJournal({ userName, locations, entries, date, signedL
         type="button"
         size="icon"
         onClick={() => setIsEquipmentDialogOpen(true)}
+        disabled={isReadOnly}
         className="fixed bottom-6 right-6 z-30 h-14 w-14 rounded-full bg-emerald-600 text-white shadow-lg shadow-emerald-500/40 hover:bg-emerald-500 sm:h-16 sm:w-16"
         aria-label="Добавить оборудование"
       >

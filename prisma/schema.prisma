@@ -29,6 +29,11 @@ model User {
   // Журналы
   temperatureEntries    TemperatureEntry[]
   healthChecks          HealthCheck[]
+  nonconformities       Nonconformity[] @relation("NonconformityCreatedBy")
+  closedNonconformities Nonconformity[] @relation("NonconformityClosedBy")
+  auditLogs             AuditLog[]
+  initiatedAuditSessions AuditSession[] @relation("AuditSessionsInitiated")
+  notifications         Notification[]
 }
 
 model Document {
@@ -52,6 +57,63 @@ model Document {
   tasks         Task[]
   watchers      DocumentWatcher[]
   executionAssignments ExecutionAssignment[]
+  registryDocument RegistryDocument?
+  temperatureEntries TemperatureEntry[]
+  healthChecks       HealthCheck[]
+  nonconformities    Nonconformity[]
+  ccps               CCP[]
+}
+
+model Nonconformity {
+  id          Int      @id @default(autoincrement())
+  title       String
+  description String?
+  severity    String   @default("critical")
+  status      String   @default("open")
+  createdAt   DateTime @default(now())
+  closedAt    DateTime?
+
+  createdById Int
+  createdBy   User     @relation("NonconformityCreatedBy", fields: [createdById], references: [id])
+  closedById  Int?
+  closedBy    User?    @relation("NonconformityClosedBy", fields: [closedById], references: [id])
+
+  documentId  Int?
+  document    Document? @relation(fields: [documentId], references: [id])
+  
+  ccps        CCP[]
+  labTests    LabTest[]
+}
+
+model AuditLog {
+  id         Int      @id @default(autoincrement())
+  createdAt  DateTime @default(now())
+
+  actorId    Int
+  actor      User     @relation(fields: [actorId], references: [id])
+
+  auditSessionId Int?
+  auditSession   AuditSession? @relation(fields: [auditSessionId], references: [id])
+
+  action     String
+  entityType String
+  entityId   Int?
+  meta       Json?
+}
+
+model AuditSession {
+  id                Int      @id @default(autoincrement())
+  status            String
+  auditType         String
+  auditorName       String?
+  auditorOrg        String?
+  startedAt         DateTime @default(now())
+  endedAt           DateTime?
+  initiatedByUserId Int
+  initiatedBy       User     @relation("AuditSessionsInitiated", fields: [initiatedByUserId], references: [id])
+  comment           String?
+
+  auditLogs         AuditLog[]
 }
 
 model Task {
@@ -141,6 +203,8 @@ model TemperatureEntry {
   userId      Int
   user        User      @relation(fields: [userId], references: [id])
   signedAt    DateTime?
+  documentId  Int?
+  document    Document? @relation(fields: [documentId], references: [id])
 
   @@unique([equipmentId, date])
 }
@@ -162,6 +226,8 @@ model HealthCheck {
   user     User                  @relation(fields: [userId], references: [id])
   signedAt DateTime?
   entries  HealthCheckEmployee[]
+  documentId Int?
+  document   Document?           @relation(fields: [documentId], references: [id])
 }
 
 model HealthCheckEmployee {
@@ -172,4 +238,126 @@ model HealthCheckEmployee {
   employee   Employee    @relation(fields: [employeeId], references: [id])
   status     String
   note       String?
+}
+
+model RegistryDocument {
+  id         Int      @id @default(autoincrement())
+  documentId Int      @unique
+  document   Document @relation(fields: [documentId], references: [id])
+  /// Тип объекта документации (дезсредства/сырьё/оборудование/персонал)
+  objectType String
+  /// Цех / зона применения
+  zone       String?
+  /// Поставщик / производитель
+  supplier   String?
+  /// Срок действия (может отсутствовать)
+  expiresAt  DateTime?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  labTests   LabTest[]
+}
+
+/// Critical Control Point (CCP) - Критическая контрольная точка HACCP
+model CCP {
+  id                    Int       @id @default(autoincrement())
+  /// Название процесса (например: "Приёмка сырья", "Термообработка")
+  process               String
+  /// Описание опасности (биологическая, химическая, физическая)
+  hazard                String
+  /// Уровень риска: low, medium, high
+  riskLevel             String    @default("medium")
+  /// Меры контроля (что делаем для предотвращения)
+  controlMeasures       String
+  /// Корректирующие действия (что делать при отклонении)
+  correctiveActions     String
+  /// Критические лимиты (например: "Температура не выше +4°C")
+  criticalLimits        String?
+  /// Методы мониторинга
+  monitoringProcedure   String?
+  /// Ответственный за контроль
+  responsiblePerson     String?
+  /// Статус: active, resolved, archived
+  status                String    @default("active")
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+  
+  /// Связи с другими модулями
+  relatedDocumentId     Int?
+  relatedDocument       Document? @relation(fields: [relatedDocumentId], references: [id])
+  relatedNonconformityId Int?
+  relatedNonconformity  Nonconformity? @relation(fields: [relatedNonconformityId], references: [id])
+  
+  /// История действий по CCP
+  actions               CCPAction[]
+}
+
+/// Действия по CCP (корректирующие меры, проверки)
+model CCPAction {
+  id          Int      @id @default(autoincrement())
+  ccpId       Int
+  ccp         CCP      @relation(fields: [ccpId], references: [id], onDelete: Cascade)
+  actionType  String   // "check", "corrective", "review"
+  description String
+  takenAt     DateTime @default(now())
+  takenBy     String?  // Кто выполнил
+  result      String?  // Результат действия
+}
+
+/// Лабораторные исследования
+model LabTest {
+  id                Int       @id @default(autoincrement())
+  /// Дата проведения анализа
+  date              DateTime  @default(now())
+  /// Тип анализа (микробиология, химия, физика)
+  testType          String
+  /// Партия/номер образца
+  batchNumber       String?
+  /// Поставщик/производитель
+  supplier          String?
+  /// Результат: compliant (соответствует), deviation (отклонение)
+  result            String    @default("compliant")
+  /// Детали результата (числовые значения, описание)
+  resultDetails     String?
+  /// Файл отчёта (PDF)
+  reportFileUrl     String?
+  reportFileName    String?
+  /// Кто провёл/зафиксировал
+  performedBy       String?
+  /// Подпись (дата подписания)
+  signedAt          DateTime?
+  /// Связь с реестром (поставщик/сырьё)
+  registryDocumentId Int?
+  registryDocument   RegistryDocument? @relation(fields: [registryDocumentId], references: [id])
+  /// Связь с несоответствием (если отклонение)
+  nonconformityId    Int?
+  nonconformity      Nonconformity? @relation(fields: [nonconformityId], references: [id])
+  
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+}
+
+/// Уведомления для пользователей
+model Notification {
+  id          Int       @id @default(autoincrement())
+  /// Тип уведомления: critical_deviation, reminder, info
+  type        String
+  /// Заголовок
+  title       String
+  /// Текст уведомления
+  message     String
+  /// Уровень важности: low, medium, high
+  priority    String    @default("medium")
+  /// Прочитано ли
+  isRead      Boolean   @default(false)
+  /// Ссылка на связанную сущность (опционально)
+  entityType  String?   // "temperature", "health", "ccp", "labtest", "document"
+  entityId    Int?
+  /// Получатель (если null - для всех с определённой ролью)
+  userId      Int?
+  user        User?     @relation(fields: [userId], references: [id])
+  /// Роль получателя (если userId null)
+  targetRole  String?   // "director", "head", etc.
+  
+  createdAt   DateTime  @default(now())
+  expiresAt   DateTime? // Автоудаление старых уведомлений
 }

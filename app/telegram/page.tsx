@@ -57,7 +57,7 @@ export default async function TelegramPage() {
             </Card>
 
             {/* Binding widget */}
-            <TelegramBindingWidget />
+            <TelegramBindingWidget currentUserRole={user.role} />
 
             {/* Features */}
             <Card className="border-slate-800 bg-slate-900/50">

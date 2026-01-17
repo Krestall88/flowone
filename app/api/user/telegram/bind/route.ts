@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireUser } from "@/lib/session";
+import { isReadOnlyRole, requireUser } from "@/lib/session";
 import crypto from "crypto";
 
 // GET - получить статус привязки
@@ -43,6 +43,9 @@ export async function GET() {
 export async function POST() {
   try {
     const user = await requireUser();
+    if (isReadOnlyRole(user.role)) {
+      return NextResponse.json({ error: "Роль только для просмотра" }, { status: 403 });
+    }
 
     // Генерируем уникальный код
     const bindingCode = crypto.randomBytes(4).toString("hex").toUpperCase();
@@ -78,6 +81,9 @@ export async function POST() {
 export async function DELETE() {
   try {
     const user = await requireUser();
+    if (isReadOnlyRole(user.role)) {
+      return NextResponse.json({ error: "Роль только для просмотра" }, { status: 403 });
+    }
 
     await prisma.user.update({
       where: { id: parseInt(user.id) },

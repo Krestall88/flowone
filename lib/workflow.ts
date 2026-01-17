@@ -1,18 +1,18 @@
 export const ACTION_CONFIG = {
   approve: {
-    label: "Согласование",
-    description: "Согласовать документ",
-    primaryButton: "Согласовать",
+    label: "Утверждение",
+    description: "Утвердить регламент/инструкцию",
+    primaryButton: "Утвердить",
   },
   sign: {
-    label: "Подписание",
-    description: "Подписать документ",
+    label: "Утверждение (подпись)",
+    description: "Утвердить регламент подписью",
     primaryButton: "Подписать",
   },
   review: {
     label: "Ознакомление",
-    description: "Ознакомиться и оставить комментарий",
-    primaryButton: "Отметить",
+    description: "Ознакомиться с регламентом",
+    primaryButton: "Ознакомлен",
   },
 } as const;
 

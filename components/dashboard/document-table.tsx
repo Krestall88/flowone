@@ -35,10 +35,10 @@ export function DocumentTable({ documents }: DocumentTableProps) {
       <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-slate-800 bg-slate-900/30 py-16 text-center">
         <FileText className="mb-4 h-10 w-10 text-slate-600" />
         <h3 className="text-lg font-semibold text-slate-300">
-          Пока нет документов в этой категории
+          Пока нет регламентов в этой категории
         </h3>
         <p className="mt-2 max-w-md text-sm text-slate-500">
-          Создайте новую служебную записку или дождитесь назначения задач, чтобы увидеть их здесь.
+          Создайте новый регламент/инструкцию или дождитесь назначения задач, чтобы увидеть их здесь.
         </p>
       </div>
     );

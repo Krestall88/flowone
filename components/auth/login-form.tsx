@@ -19,7 +19,7 @@ const formSchema = z.object({
 
 type FormValues = z.infer<typeof formSchema>;
 
-export function LoginForm({ className, callbackUrl = "/workflow" }: { className?: string; callbackUrl?: string }) {
+export function LoginForm({ className, callbackUrl = "/dashboard" }: { className?: string; callbackUrl?: string }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const callbackError = searchParams.get("error");

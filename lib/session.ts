@@ -1,6 +1,8 @@
 import { authOptions } from "@/lib/auth";
 import { getServerSession } from "next-auth";
 
+export { isReadOnlyRole } from "@/lib/roles";
+
 export async function getCurrentSession() {
   return getServerSession(authOptions);
 }

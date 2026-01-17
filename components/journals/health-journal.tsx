@@ -1,29 +1,40 @@
 "use client";
 
 import { useEffect, useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
+import { isSameDay, parseISO, startOfToday } from "date-fns";
 import { CheckCircle2, Edit2, Plus, User } from "lucide-react";
 
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
-import {
-  Dialog,
-  DialogTrigger,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-  DialogClose,
-} from "@/components/ui/dialog";
+
+type Status = "healthy" | "sick" | "vacation" | "day_off" | "sick_leave" | null;
 
 interface EmployeeEntry {
   id: number;
   name: string;
   position?: string | null;
   active?: boolean;
+}
+
+function getEmployeeCardTone(status: Status) {
+  switch (status) {
+    case "healthy":
+      return "border-emerald-500/40 bg-emerald-500/5";
+    case "sick":
+      return "border-red-500/50 bg-red-500/10";
+    case "sick_leave":
+      return "border-amber-500/50 bg-amber-500/10";
+    case "vacation":
+      return "border-sky-500/40 bg-sky-500/10";
+    case "day_off":
+      return "border-slate-700 bg-slate-900/70";
+    default:
+      return "border-slate-800 bg-slate-900/70";
+  }
 }
 
 interface HealthJournalProps {
@@ -33,8 +44,6 @@ interface HealthJournalProps {
   initialNotes?: Record<number, string>;
   signedLabel?: string | null;
 }
-
-type Status = "healthy" | "sick" | "vacation" | "day_off" | "sick_leave" | null;
 
 const STATUS_OPTIONS: { value: Exclude<Status, null>; label: string; description: string }[] = [
   { value: "healthy", label: "Зд.", description: "допущен к работе" },
@@ -83,17 +92,19 @@ export function HealthJournal({ employees, date, initialStatuses, initialNotes, 
   const [notes, setNotes] = useState<Record<number, string>>(initialNotes ?? {});
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const documentId = searchParams.get("documentId");
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const [search, setSearch] = useState("");
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isAddFormOpen, setIsAddFormOpen] = useState(false);
   const [newEmployeeName, setNewEmployeeName] = useState("");
   const [newEmployeePosition, setNewEmployeePosition] = useState("");
   const [addError, setAddError] = useState<string | null>(null);
   const [isAdding, setIsAdding] = useState(false);
 
-  const [editingEmployee, setEditingEmployee] = useState<EmployeeEntry | null>(null);
+  const [editingEmployeeId, setEditingEmployeeId] = useState<number | null>(null);
   const [editName, setEditName] = useState("");
   const [editPosition, setEditPosition] = useState("");
   const [editActive, setEditActive] = useState(true);
@@ -107,6 +118,10 @@ export function HealthJournal({ employees, date, initialStatuses, initialNotes, 
     setSuccess(false);
     setError(null);
   }, [date, initialStatuses, initialNotes]);
+
+  const selectedDate = parseISO(date);
+  const isToday = isSameDay(selectedDate, startOfToday());
+  const isReadOnly = !isToday;
 
   const handleStatusChange = (id: number, status: Status) => {
     setStatuses((prev) => ({ ...prev, [id]: status }));
@@ -146,12 +161,11 @@ export function HealthJournal({ employees, date, initialStatuses, initialNotes, 
         throw new Error(data?.error ?? "Не удалось добавить сотрудника");
       }
 
-      setIsDialogOpen(false);
+      setIsAddFormOpen(false);
       setNewEmployeeName("");
+      setNewEmployeePosition("");
 
-      if (typeof window !== "undefined") {
-        window.location.reload();
-      }
+      router.refresh();
     } catch (err) {
       setAddError(err instanceof Error ? err.message : "Ошибка добавления сотрудника");
     } finally {
@@ -160,7 +174,7 @@ export function HealthJournal({ employees, date, initialStatuses, initialNotes, 
   };
 
   const handleOpenEdit = (employee: EmployeeEntry) => {
-    setEditingEmployee(employee);
+    setEditingEmployeeId(employee.id);
     setEditName(employee.name);
     setEditPosition(employee.position ?? "");
     setEditActive(employee.active ?? true);
@@ -168,7 +182,7 @@ export function HealthJournal({ employees, date, initialStatuses, initialNotes, 
   };
 
   const handleSaveEmployee = async () => {
-    if (!editingEmployee) return;
+    if (!editingEmployeeId) return;
 
     const name = editName.trim();
     const position = editPosition.trim();
@@ -188,7 +202,7 @@ export function HealthJournal({ employees, date, initialStatuses, initialNotes, 
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          id: editingEmployee.id,
+          id: editingEmployeeId,
           name,
           position,
           active: editActive,
@@ -200,9 +214,7 @@ export function HealthJournal({ employees, date, initialStatuses, initialNotes, 
         throw new Error(data?.error ?? "Не удалось сохранить сотрудника");
       }
 
-      if (typeof window !== "undefined") {
-        window.location.reload();
-      }
+      router.refresh();
     } catch (err) {
       setEditError(err instanceof Error ? err.message : "Ошибка сохранения сотрудника");
     } finally {
@@ -211,13 +223,13 @@ export function HealthJournal({ employees, date, initialStatuses, initialNotes, 
   };
 
   const handleDeleteEmployee = async () => {
-    if (!editingEmployee) return;
+    if (!editingEmployeeId) return;
 
     setEditError(null);
     setIsDeleting(true);
 
     try {
-      const res = await fetch(`/api/journals/employees?id=${editingEmployee.id}`, {
+      const res = await fetch(`/api/journals/employees?id=${editingEmployeeId}`, {
         method: "DELETE",
       });
 
@@ -226,9 +238,7 @@ export function HealthJournal({ employees, date, initialStatuses, initialNotes, 
         throw new Error(data?.error ?? "Не удалось удалить сотрудника");
       }
 
-      if (typeof window !== "undefined") {
-        window.location.reload();
-      }
+      router.refresh();
     } catch (err) {
       setEditError(err instanceof Error ? err.message : "Ошибка удаления сотрудника");
     } finally {
@@ -237,6 +247,7 @@ export function HealthJournal({ employees, date, initialStatuses, initialNotes, 
   };
 
   const handleSubmit = () => {
+    if (isReadOnly) return;
     setError(null);
     setSuccess(false);
 
@@ -244,6 +255,9 @@ export function HealthJournal({ employees, date, initialStatuses, initialNotes, 
       try {
         const formData = new FormData();
         formData.append("date", date);
+        if (documentId && documentId.trim()) {
+          formData.append("documentId", documentId.trim());
+        }
         employees.forEach((e) => {
           const status = statuses[e.id];
           const note = notes[e.id];
@@ -261,6 +275,9 @@ export function HealthJournal({ employees, date, initialStatuses, initialNotes, 
 
         if (!res.ok) {
           const data = await res.json().catch(() => null);
+          if (res.status === 403 && data?.reason === "audit_mode_lock") {
+            throw new Error(data?.error ?? "Действие запрещено в режиме проверки");
+          }
           throw new Error(data?.error ?? "Не удалось сохранить журнал");
         }
 
@@ -283,8 +300,21 @@ export function HealthJournal({ employees, date, initialStatuses, initialNotes, 
       })
     : employees;
 
+  const statusCounts = employees.reduce<Record<string, number>>((acc, employee) => {
+    const status = statuses[employee.id];
+    const key = status ?? "unset";
+    acc[key] = (acc[key] ?? 0) + 1;
+    return acc;
+  }, {});
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pb-24">
+      {isReadOnly && (
+        <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
+          Режим просмотра: журнал можно заполнять и подписывать только за текущий день.
+        </div>
+      )}
+
       <Card className="border-slate-800 bg-slate-900/70">
         <CardHeader className="space-y-3">
           <div>
@@ -292,12 +322,42 @@ export function HealthJournal({ employees, date, initialStatuses, initialNotes, 
             <CardDescription className="text-sm text-slate-400">
               Отметьте статус каждого сотрудника за выбранный день. При необходимости добавьте примечание.
             </CardDescription>
+            {documentId && documentId.trim() && (
+              <p className="mt-2 text-[11px] text-slate-300">
+                Привязано к документу{" "}
+                <Link
+                  href={`/documents/${documentId}`}
+                  className="font-semibold text-emerald-200 underline-offset-2 hover:underline"
+                >
+                  #{documentId}
+                </Link>
+              </p>
+            )}
             {signedLabel && (
               <p className="mt-1 flex items-center gap-1 text-[11px] text-emerald-300">
                 <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
                 <span>Журнал подписан {signedLabel}</span>
               </p>
             )}
+          </div>
+          <div className="flex flex-wrap gap-2 text-[11px]">
+            {STATUS_OPTIONS.map((option) => (
+              <div
+                key={option.value}
+                className="flex items-center gap-1 rounded-full border border-slate-800 bg-slate-950/30 px-2 py-1"
+              >
+                <span className={`h-1.5 w-1.5 rounded-full ${getStatusDotColor(option.value)}`} />
+                <span className="text-slate-200">
+                  {option.label}: <span className="font-semibold">{statusCounts[option.value] ?? 0}</span>
+                </span>
+              </div>
+            ))}
+            <div className="flex items-center gap-1 rounded-full border border-slate-800 bg-slate-950/30 px-2 py-1">
+              <span className="h-1.5 w-1.5 rounded-full bg-slate-500" />
+              <span className="text-slate-200">
+                Без статуса: <span className="font-semibold">{statusCounts.unset ?? 0}</span>
+              </span>
+            </div>
           </div>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <Input
@@ -308,65 +368,18 @@ export function HealthJournal({ employees, date, initialStatuses, initialNotes, 
             />
             <div className="flex items-center gap-3">
               <p className="text-xs text-slate-500">Всего сотрудников: {employees.length}</p>
-              <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                <DialogTrigger asChild>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="h-9 rounded-lg border-emerald-600/60 bg-emerald-600/10 px-4 text-xs font-semibold text-emerald-100 hover:bg-emerald-600/20"
-                  >
-                    Добавить
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="border-slate-800 bg-slate-950 text-slate-50">
-                  <DialogHeader>
-                    <DialogTitle>Новый сотрудник журнала</DialogTitle>
-                    <DialogDescription className="text-slate-400">
-                      Укажите данные сотрудника, которого нужно добавить в журнал здоровья.
-                    </DialogDescription>
-                  </DialogHeader>
-                  <div className="space-y-3 pt-2">
-                    <div className="space-y-1">
-                      <p className="text-xs text-slate-400">ФИО сотрудника</p>
-                      <Input
-                        value={newEmployeeName}
-                        onChange={(e) => setNewEmployeeName(e.target.value)}
-                        className="h-10 rounded-lg border-slate-700 bg-slate-900 text-sm text-white placeholder:text-slate-500"
-                        placeholder="Например: Иван Петров"
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <p className="text-xs text-slate-400">Должность (по желанию)</p>
-                      <Input
-                        value={newEmployeePosition}
-                        onChange={(e) => setNewEmployeePosition(e.target.value)}
-                        className="h-10 rounded-lg border-slate-700 bg-slate-900 text-sm text-white placeholder:text-slate-500"
-                        placeholder="Например: Повар"
-                      />
-                    </div>
-                    {addError && <p className="text-xs text-red-400">{addError}</p>}
-                  </div>
-                  <DialogFooter className="mt-4">
-                    <DialogClose asChild>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        className="h-9 rounded-lg border-slate-600 bg-slate-900/80 text-xs text-slate-100 hover:bg-slate-800"
-                      >
-                        Отмена
-                      </Button>
-                    </DialogClose>
-                    <Button
-                      type="button"
-                      onClick={handleAddEmployee}
-                      disabled={isAdding}
-                      className="h-9 rounded-lg bg-emerald-600 px-4 text-xs font-semibold text-white hover:bg-emerald-500"
-                    >
-                      {isAdding ? "Сохраняем..." : "Добавить"}
-                    </Button>
-                  </DialogFooter>
-                </DialogContent>
-              </Dialog>
+              <Button
+                type="button"
+                variant="outline"
+                className="h-9 rounded-lg border-emerald-600/60 bg-emerald-600/10 px-4 text-xs font-semibold text-emerald-100 hover:bg-emerald-600/20"
+                onClick={() => {
+                  setIsAddFormOpen((prev) => !prev);
+                  setAddError(null);
+                }}
+                disabled={isReadOnly}
+              >
+                {isAddFormOpen ? "Скрыть" : "Добавить"}
+              </Button>
             </div>
           </div>
         </CardHeader>
@@ -392,9 +405,67 @@ export function HealthJournal({ employees, date, initialStatuses, initialNotes, 
         </CardContent>
       </Card>
 
+      {isAddFormOpen && (
+        <Card className="border-slate-800 bg-slate-900/70">
+          <CardHeader className="space-y-2">
+            <CardTitle className="text-lg text-white">Новый сотрудник</CardTitle>
+            <CardDescription className="text-sm text-slate-400">
+              Добавьте сотрудника в справочник журнала.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="space-y-1">
+                <p className="text-xs text-slate-400">ФИО сотрудника</p>
+                <Input
+                  value={newEmployeeName}
+                  onChange={(e) => setNewEmployeeName(e.target.value)}
+                  className="h-10 rounded-lg border-slate-700 bg-slate-900 text-sm text-white placeholder:text-slate-500"
+                  placeholder="Например: Иван Петров"
+                />
+              </div>
+              <div className="space-y-1">
+                <p className="text-xs text-slate-400">Должность (по желанию)</p>
+                <Input
+                  value={newEmployeePosition}
+                  onChange={(e) => setNewEmployeePosition(e.target.value)}
+                  className="h-10 rounded-lg border-slate-700 bg-slate-900 text-sm text-white placeholder:text-slate-500"
+                  placeholder="Например: Повар"
+                />
+              </div>
+            </div>
+            {addError && <p className="text-xs text-red-400">{addError}</p>}
+            <div className="flex flex-wrap items-center justify-end gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                className="h-9 rounded-lg border-slate-600 bg-slate-900/80 text-xs text-slate-100 hover:bg-slate-800"
+                onClick={() => {
+                  setIsAddFormOpen(false);
+                  setAddError(null);
+                }}
+              >
+                Отмена
+              </Button>
+              <Button
+                type="button"
+                onClick={handleAddEmployee}
+                disabled={isAdding}
+                className="h-9 rounded-lg bg-emerald-600 px-4 text-xs font-semibold text-white hover:bg-emerald-500"
+              >
+                {isAdding ? "Сохраняем..." : "Добавить"}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       <div className="space-y-4">
         {filteredEmployees.map((employee) => (
-          <Card key={employee.id} className="border-slate-800 bg-slate-900/70">
+          <Card
+            key={employee.id}
+            className={getEmployeeCardTone(statuses[employee.id] ?? null)}
+          >
             <CardContent className="space-y-3 pt-5">
               <div className="flex items-center gap-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-emerald-500 to-cyan-500 text-white">
@@ -412,11 +483,105 @@ export function HealthJournal({ employees, date, initialStatuses, initialNotes, 
                   size="sm"
                   className="h-8 rounded-lg border-slate-700 px-2 text-[11px] text-slate-200 hover:border-emerald-500 hover:text-emerald-200"
                   onClick={() => handleOpenEdit(employee)}
+                  disabled={isReadOnly}
                 >
                   <Edit2 className="mr-1 h-3 w-3" />
                   Редактировать
                 </Button>
               </div>
+
+              {editingEmployeeId === employee.id && (
+                <div className="rounded-xl border border-slate-800 bg-slate-950/40 p-3">
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div className="space-y-1">
+                      <p className="text-xs text-slate-400">ФИО</p>
+                      <Input
+                        value={editName}
+                        onChange={(e) => setEditName(e.target.value)}
+                        className="h-10 rounded-lg border-slate-700 bg-slate-900 text-sm text-white placeholder:text-slate-500"
+                        placeholder="ФИО"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-xs text-slate-400">Должность</p>
+                      <Input
+                        value={editPosition}
+                        onChange={(e) => setEditPosition(e.target.value)}
+                        className="h-10 rounded-lg border-slate-700 bg-slate-900 text-sm text-white placeholder:text-slate-500"
+                        placeholder="Например: Повар"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="mt-3 space-y-1">
+                    <p className="text-xs text-slate-400">Статус сотрудника</p>
+                    <div className="flex gap-2">
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        className={`h-8 rounded-full px-3 text-xs ${
+                          editActive
+                            ? "border-emerald-500/70 bg-emerald-500/20 text-emerald-100"
+                            : "border-slate-600 bg-slate-900/80 text-slate-200"
+                        }`}
+                        onClick={() => setEditActive(true)}
+                      >
+                        Активен
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        className={`h-8 rounded-full px-3 text-xs ${
+                          !editActive
+                            ? "border-red-500/70 bg-red-500/20 text-red-100"
+                            : "border-slate-600 bg-slate-900/80 text-slate-200"
+                        }`}
+                        onClick={() => setEditActive(false)}
+                      >
+                        Заблокирован
+                      </Button>
+                    </div>
+                  </div>
+
+                  {editError && <p className="mt-2 text-xs text-red-400">{editError}</p>}
+
+                  <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      className="h-9 rounded-lg bg-red-500/80 px-4 text-xs text-white"
+                      onClick={handleDeleteEmployee}
+                      disabled={isDeleting || isSavingEdit}
+                    >
+                      {isDeleting ? "Удаляем..." : "Удалить"}
+                    </Button>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="h-9 rounded-lg border-slate-600 bg-slate-900/80 text-xs text-slate-100 hover:bg-slate-800"
+                        onClick={() => {
+                          setEditingEmployeeId(null);
+                          setEditError(null);
+                        }}
+                        disabled={isDeleting || isSavingEdit}
+                      >
+                        Закрыть
+                      </Button>
+                      <Button
+                        type="button"
+                        onClick={handleSaveEmployee}
+                        disabled={isSavingEdit || isDeleting}
+                        className="h-9 rounded-lg bg-emerald-600 px-4 text-xs font-semibold text-white hover:bg-emerald-500"
+                      >
+                        {isSavingEdit ? "Сохраняем..." : "Сохранить"}
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               <div className="space-y-1">
                 <p className="text-xs text-slate-400">Статус за день</p>
@@ -435,6 +600,7 @@ export function HealthJournal({ employees, date, initialStatuses, initialNotes, 
                             : "border-slate-700 bg-slate-900/60 text-slate-200"
                         }`}
                         onClick={() => handleStatusChange(employee.id, option.value)}
+                        disabled={isReadOnly}
                       >
                         {option.label}
                       </Button>
@@ -451,6 +617,7 @@ export function HealthJournal({ employees, date, initialStatuses, initialNotes, 
                   placeholder="Например: жалобы на недомогание, направление к врачу, причина отсутствия"
                   value={notes[employee.id] ?? ""}
                   onChange={(e) => handleNoteChange(employee.id, e.target.value)}
+                  disabled={isReadOnly}
                 />
               </div>
             </CardContent>
@@ -463,107 +630,6 @@ export function HealthJournal({ employees, date, initialStatuses, initialNotes, 
           По вашему запросу сотрудники не найдены.
         </div>
       )}
-
-      <Dialog
-        open={!!editingEmployee}
-        onOpenChange={(open) => {
-          if (!open) {
-            setEditingEmployee(null);
-            setEditError(null);
-          }
-        }}
-      >
-        <DialogContent className="border-slate-800 bg-slate-950 text-slate-50">
-          <DialogHeader>
-            <DialogTitle>Редактирование сотрудника</DialogTitle>
-            <DialogDescription className="text-slate-400">
-              Измените данные сотрудника или заблокируйте его, чтобы он не отображался в журнале.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-3 pt-2">
-            <div className="space-y-1">
-              <p className="text-xs text-slate-400">ФИО сотрудника</p>
-              <Input
-                value={editName}
-                onChange={(e) => setEditName(e.target.value)}
-                className="h-10 rounded-lg border-slate-700 bg-slate-900 text-sm text-white placeholder:text-slate-500"
-                placeholder="ФИО"
-              />
-            </div>
-            <div className="space-y-1">
-              <p className="text-xs text-slate-400">Должность</p>
-              <Input
-                value={editPosition}
-                onChange={(e) => setEditPosition(e.target.value)}
-                className="h-10 rounded-lg border-slate-700 bg-slate-900 text-sm text-white placeholder:text-slate-500"
-                placeholder="Например: Повар"
-              />
-            </div>
-            <div className="space-y-1">
-              <p className="text-xs text-slate-400">Статус сотрудника</p>
-              <div className="flex gap-2">
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  className={`h-8 rounded-full px-3 text-xs ${
-                    editActive
-                      ? "border-emerald-500/70 bg-emerald-500/20 text-emerald-100"
-                      : "border-slate-600 bg-slate-900/80 text-slate-200"
-                  }`}
-                  onClick={() => setEditActive(true)}
-                >
-                  Активен
-                </Button>
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  className={`h-8 rounded-full px-3 text-xs ${
-                    !editActive
-                      ? "border-red-500/70 bg-red-500/20 text-red-100"
-                      : "border-slate-600 bg-slate-900/80 text-slate-200"
-                  }`}
-                  onClick={() => setEditActive(false)}
-                >
-                  Заблокирован
-                </Button>
-              </div>
-            </div>
-            {editError && <p className="text-xs text-red-400">{editError}</p>}
-          </div>
-          <DialogFooter className="mt-4 flex flex-col gap-2 sm:flex-row sm:justify-between">
-            <Button
-              type="button"
-              variant="destructive"
-              className="h-9 rounded-lg bg-red-500/80 px-4 text-xs text-white"
-              onClick={handleDeleteEmployee}
-              disabled={isDeleting || isSavingEdit}
-            >
-              {isDeleting ? "Удаляем..." : "Удалить сотрудника"}
-            </Button>
-            <div className="flex gap-2">
-              <DialogClose asChild>
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="h-9 rounded-lg border-slate-600 bg-slate-900/80 text-xs text-slate-100 hover:bg-slate-800"
-                >
-                  Отмена
-                </Button>
-              </DialogClose>
-              <Button
-                type="button"
-                onClick={handleSaveEmployee}
-                disabled={isSavingEdit || isDeleting}
-                className="h-9 rounded-lg bg-emerald-600 px-4 text-xs font-semibold text-white hover:bg-emerald-500"
-              >
-                {isSavingEdit ? "Сохраняем..." : "Сохранить"}
-              </Button>
-            </div>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
       {error && (
         <div className="rounded-lg border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-300">
@@ -578,27 +644,35 @@ export function HealthJournal({ employees, date, initialStatuses, initialNotes, 
         </div>
       )}
 
-      <div className="flex justify-end">
-        <Button
-          type="button"
-          size="lg"
-          onClick={handleSubmit}
-          disabled={isPending}
-          className="min-w-[220px] gap-2 bg-emerald-600 text-base font-semibold shadow-emerald-500/40 hover:bg-emerald-500"
-        >
-          {isPending && <span className="h-4 w-4 animate-spin rounded-full border-2 border-emerald-200 border-t-transparent" />}
-          Подписать весь журнал
-        </Button>
+      <div className="sticky bottom-0 z-30 -mx-4 border-t border-slate-800 bg-slate-950/95 px-4 py-3 backdrop-blur sm:rounded-2xl sm:border">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <div className="text-xs text-slate-400">
+            {isReadOnly ? "Только просмотр" : "После нажатия журнал будет подписан ответственным"}
+          </div>
+          <Button
+            type="button"
+            size="lg"
+            onClick={handleSubmit}
+            disabled={isPending || isReadOnly}
+            className="w-full gap-2 bg-emerald-600 text-base font-semibold shadow-emerald-500/40 hover:bg-emerald-500 sm:w-auto sm:min-w-[260px]"
+          >
+            {isPending && (
+              <span className="h-4 w-4 animate-spin rounded-full border-2 border-emerald-200 border-t-transparent" />
+            )}
+            Подписать смену
+          </Button>
+        </div>
       </div>
       <Button
         type="button"
         size="icon"
         onClick={() => {
-          setIsDialogOpen(true);
+          setIsAddFormOpen(true);
           setAddError(null);
           setNewEmployeeName("");
           setNewEmployeePosition("");
         }}
+        disabled={isReadOnly}
         className="fixed bottom-6 right-6 z-40 h-14 w-14 rounded-full bg-emerald-600 text-white shadow-lg shadow-emerald-500/40 hover:bg-emerald-500"
       >
         <Plus className="h-6 w-6" />

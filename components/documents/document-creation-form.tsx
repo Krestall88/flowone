@@ -37,8 +37,8 @@ interface DocumentCreationFormProps {
 }
 
 const ACTION_CONFIG = {
-  approve: { label: "Согласование", icon: Check, color: "bg-blue-500", textColor: "text-blue-400" },
-  sign: { label: "Подписание", icon: Pen, color: "bg-purple-500", textColor: "text-purple-400" },
+  approve: { label: "Утверждение", icon: Check, color: "bg-blue-500", textColor: "text-blue-400" },
+  sign: { label: "Утверждение (подпись)", icon: Pen, color: "bg-purple-500", textColor: "text-purple-400" },
   review: { label: "Ознакомление", icon: Eye, color: "bg-cyan-500", textColor: "text-cyan-400" },
 };
 
@@ -67,9 +67,13 @@ export function DocumentCreationForm({ users, currentUser }: DocumentCreationFor
   const [responsibleId, setResponsibleId] = useState<number | null>(null);
   const [files, setFiles] = useState<File[]>([]);
 
+  const eligibleUsers = users.filter(
+    (user) => !["journals_admin", "auditor", "technologist"].includes(user.role),
+  );
+
   // Filter users: exclude those already in workflow
   const usedUserIds = workflowSteps.map((s) => s.userId);
-  const availableUsers = users.filter(
+  const availableUsers = eligibleUsers.filter(
     (user) =>
       !usedUserIds.includes(user.id) &&
       (user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -126,12 +130,18 @@ export function DocumentCreationForm({ users, currentUser }: DocumentCreationFor
     e.preventDefault();
 
     if (!title.trim() || !content.trim()) {
-      alert("Заполните тему и содержание документа");
+      alert("Заполните название и текст регламента");
       return;
     }
 
     if (workflowSteps.length === 0) {
       alert("Добавьте хотя бы один этап в маршрут");
+      return;
+    }
+
+    const firstAssigneeId = workflowSteps[0]?.userId;
+    if (!firstAssigneeId) {
+      alert("Первый этап маршрута не задан");
       return;
     }
 
@@ -153,7 +163,7 @@ export function DocumentCreationForm({ users, currentUser }: DocumentCreationFor
         const formData = new FormData();
         formData.append("title", title);
         formData.append("body", content);
-        formData.append("recipientId", responsibleId.toString());
+        formData.append("recipientId", firstAssigneeId.toString());
         formData.append("responsibleId", responsibleId.toString());
         formData.append("stages", JSON.stringify(
           workflowSteps.map((step) => ({
@@ -218,7 +228,7 @@ export function DocumentCreationForm({ users, currentUser }: DocumentCreationFor
         router.push(`/documents/${data.document.id}`);
       } catch (error) {
         console.error("Error creating document:", error);
-        alert(error instanceof Error ? error.message : "Ошибка создания документа");
+        alert(error instanceof Error ? error.message : "Ошибка создания регламента");
       }
     });
   };
@@ -233,23 +243,23 @@ export function DocumentCreationForm({ users, currentUser }: DocumentCreationFor
           {/* Header */}
           <div className="space-y-2">
             <h1 className="bg-gradient-to-r from-emerald-400 via-cyan-400 to-blue-400 bg-clip-text text-2xl font-bold text-transparent sm:text-3xl lg:text-4xl">
-              Новая служебная записка
+              Новый регламент
             </h1>
             <p className="text-sm text-slate-400 sm:text-base lg:text-lg">
-              Создайте документ — он улетит по маршруту за секунды 🚀
+              Создайте регламент/инструкцию и отправьте на утверждение и ознакомление
             </p>
           </div>
 
           {/* Title field */}
           <div className="space-y-2">
             <Label htmlFor="title" className="text-slate-300">
-              Тема документа
+              Название регламента
             </Label>
             <Input
               id="title"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="Например: Заявка на закупку муки 50 тонн"
+              placeholder="Например: Инструкция по мойке оборудования"
               className="h-11 border-slate-700 bg-slate-900/50 text-sm text-white placeholder:text-slate-500 sm:h-12 sm:text-base lg:h-14 lg:text-lg"
               required
             />
@@ -258,13 +268,13 @@ export function DocumentCreationForm({ users, currentUser }: DocumentCreationFor
           {/* Content field */}
           <div className="space-y-2">
             <Label htmlFor="content" className="text-slate-300">
-              Содержание
+              Текст регламента
             </Label>
             <Textarea
               id="content"
               value={content}
               onChange={(e) => setContent(e.target.value)}
-              placeholder="Опишите детали документа..."
+              placeholder="Опишите требования/шаги/частоту и ответственных..."
               rows={12}
               className="resize-none border-slate-700 bg-slate-900/50 text-white placeholder:text-slate-500"
               required
@@ -331,9 +341,9 @@ export function DocumentCreationForm({ users, currentUser }: DocumentCreationFor
       <div className="w-full space-y-4 p-4 sm:space-y-6 sm:p-6 lg:w-1/3 lg:p-8">
         <div className="space-y-4">
           <div>
-            <h2 className="mb-1 text-lg font-bold text-white sm:text-xl lg:text-2xl">Маршрут</h2>
+            <h2 className="mb-1 text-lg font-bold text-white sm:text-xl lg:text-2xl">Маршрут утверждения</h2>
             <p className="text-sm text-slate-400">
-              Выберите сотрудников для согласования
+              Выберите сотрудников для утверждения и ознакомления
             </p>
           </div>
 
@@ -457,7 +467,7 @@ export function DocumentCreationForm({ users, currentUser }: DocumentCreationFor
                 className="h-10 w-full rounded-md border border-emerald-700 bg-emerald-950/50 px-3 text-sm text-white"
               >
                 <option value="">Выберите ответственного</option>
-                {users.map((user) => (
+                {eligibleUsers.map((user) => (
                   <option key={user.id} value={user.id.toString()}>
                     {user.name} • {ROLE_LABELS[user.role]}
                   </option>

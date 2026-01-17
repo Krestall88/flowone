@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/providers";
+import { AuditModeBanner } from "@/components/audit/audit-mode-banner";
 
 const sans = Inter({
   variable: "--font-geist-sans",
@@ -14,8 +15,8 @@ const mono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "FlowOne Docs",
-  description: "Прототип системы документооборота",
+  title: "HACCP Control / Production Control",
+  description: "HACCP, санитарный контроль, журналы и документы для проверок",
 };
 
 export default function RootLayout({
@@ -28,7 +29,10 @@ export default function RootLayout({
       <body
         className={`${sans.variable} ${mono.variable} antialiased min-h-screen bg-background text-foreground`}
       >
-        <Providers>{children}</Providers>
+        <Providers>
+          <AuditModeBanner />
+          {children}
+        </Providers>
       </body>
     </html>
   );

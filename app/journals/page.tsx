@@ -2,7 +2,8 @@ import { ThermometerSun, HeartPulse, ClipboardList, Recycle, ShieldCheck, Drople
 import { format, parseISO, startOfToday } from "date-fns";
 
 import { requireUser } from "@/lib/session";
-import { JournalsSidebar } from "@/components/journals/journals-sidebar";
+import { getInboxCount } from "@/lib/inbox-count";
+import { AppSidebar } from "@/components/layout/app-sidebar";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
@@ -97,6 +98,8 @@ export default async function JournalsPage({
   searchParams?: { date?: string };
 }) {
   const user = await requireUser();
+  const userId = Number(user.id);
+  const inboxCount = await getInboxCount(userId);
 
   const today = startOfToday();
   const dateParam = searchParams?.date;
@@ -113,13 +116,14 @@ export default async function JournalsPage({
 
   return (
     <div className="relative min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
-      <JournalsSidebar
+      <AppSidebar
         user={{
           id: user.id,
           name: user.name ?? null,
           email: user.email ?? null,
           role: user.role,
         }}
+        inboxCount={inboxCount}
       />
 
       <main className="lg:ml-64">

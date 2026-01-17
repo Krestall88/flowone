@@ -2,11 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
 import { prisma } from "@/lib/prisma";
-import { requireUser } from "@/lib/session";
+import { isReadOnlyRole, requireUser } from "@/lib/session";
 import { serializeDocumentContent } from "@/lib/document-content";
 import { TASK_ACTIONS } from "@/lib/workflow";
 import { sendTaskNotification } from "@/lib/telegram";
 import { uploadDocumentFile } from "@/lib/supabase";
+import { logAudit } from "@/lib/audit-log";
+import { auditModeLockedResponse, isAuditModeActive } from "@/lib/audit-session";
 
 const stageActions = TASK_ACTIONS.length > 0 ? TASK_ACTIONS : ["approve", "sign", "review"];
 const createSchema = z.object({
@@ -83,6 +85,13 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   const sessionUser = await requireUser();
+  if (isReadOnlyRole(sessionUser.role)) {
+    return NextResponse.json({ error: "Роль только для просмотра" }, { status: 403 });
+  }
+
+  if (await isAuditModeActive()) {
+    return NextResponse.json(auditModeLockedResponse("В режиме проверки запрещено создавать документы"), { status: 403 });
+  }
 
   const contentType = request.headers.get("content-type") || "";
   let body: unknown;
@@ -296,6 +305,20 @@ export async function POST(request: NextRequest) {
     }
 
     return document;
+  });
+
+  await logAudit({
+    actorId: authorId,
+    action: "document.create",
+    entityType: "document",
+    entityId: result.id,
+    meta: {
+      recipientId,
+      responsibleId: responsibleId || null,
+      stagesCount: stages.length,
+      watchersCount: (watchers ?? []).length,
+      filesCount: formFiles.length,
+    },
   });
 
   const documentWithRelations = await prisma.document.findUnique({

@@ -7,6 +7,7 @@ import { Loader2, CheckCircle2, Clock3, Eye, Briefcase } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { isReadOnlyRole } from "@/lib/roles";
 
 type ExecutionStatus = "pending" | "viewed" | "in_progress" | "completed";
 
@@ -89,6 +90,8 @@ export function ExecutionPanel({
     currentUserId === recipientId ||
     (responsibleId !== null && currentUserId === responsibleId) ||
     currentUserRole === "director";
+
+  const readOnly = isReadOnlyRole(currentUserRole);
 
   useEffect(() => {
     if (!canManageExecution) return;
@@ -186,7 +189,7 @@ export function ExecutionPanel({
 
   return (
     <div className="space-y-4">
-      {canManageExecution && (
+      {canManageExecution && !readOnly && (
         <div className="space-y-3 rounded-xl border border-slate-200 bg-slate-50 p-4">
           <div className="flex items-center justify-between gap-2">
             <Label className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
@@ -289,7 +292,7 @@ export function ExecutionPanel({
                   </div>
 
                   <div className="flex flex-wrap gap-2">
-                    {isCurrentExecutor && (
+                    {isCurrentExecutor && !readOnly && (
                       <>
                         <Button
                           type="button"

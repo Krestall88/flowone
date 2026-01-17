@@ -2,12 +2,14 @@
 
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
-import { Home, FileText, PlusCircle, Archive, LogOut, User, Send, Menu, X } from "lucide-react";
+import { LayoutDashboard, NotebookTabs, Home, LogOut, Send, Menu, X, ClipboardCheck, PlusCircle, Boxes, AlertTriangle, ScrollText, CheckSquare, Shield, Bell } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { signOut } from "next-auth/react";
 import { useTransition, useState } from "react";
+import { canViewAuditLog } from "@/lib/audit-log";
+import { isReadOnlyRole } from "@/lib/roles";
 
 interface AppSidebarProps {
   user: {
@@ -19,7 +21,7 @@ interface AppSidebarProps {
   inboxCount?: number;
 }
 
-const ROLE_LABELS: Record<string, string> = {
+ const ROLE_LABELS: Record<string, string> = {
   director: "Директор",
   accountant: "Главный бухгалтер",
   head: "Руководитель",
@@ -27,9 +29,16 @@ const ROLE_LABELS: Record<string, string> = {
 };
 
 const navigation = [
-  { name: "Входящие", href: "/workflow", icon: Home, exact: true, showBadge: true },
-  { name: "На согласовании", href: "/workflow?scope=in_progress", icon: FileText, exact: false },
-  { name: "Архив", href: "/workflow?scope=archive", icon: Archive, exact: false },
+  { name: "Панель", href: "/dashboard", icon: LayoutDashboard, exact: true },
+  { name: "Журналы", href: "/journals", icon: NotebookTabs, exact: false },
+  { name: "Регламенты", href: "/workflow", icon: Home, exact: true, showBadge: true },
+  { name: "Документы для проверок", href: "/registry", icon: ClipboardCheck, exact: true },
+  { name: "Пакет для проверки", href: "/registry/package", icon: ClipboardCheck, exact: false },
+  { name: "Audit Checklist", href: "/audit/checklist", icon: CheckSquare, exact: true },
+  { name: "HACCP Plan", href: "/haccp-plan", icon: Shield, exact: false },
+  { name: "Уведомления", href: "/notifications", icon: Bell, exact: true, showNotificationBadge: true },
+  { name: "Несоответствия", href: "/nonconformities", icon: AlertTriangle, exact: true },
+  { name: "Справочники", href: "/master-data", icon: Boxes, exact: true },
   { name: "Telegram", href: "/telegram", icon: Send, exact: true },
 ];
 
@@ -39,6 +48,8 @@ export function AppSidebar({ user, inboxCount = 0 }: AppSidebarProps) {
   const scope = searchParams.get("scope");
   const [isPending, startTransition] = useTransition();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  const readOnly = isReadOnlyRole(user.role);
 
   const handleLogout = () => {
     startTransition(async () => {
@@ -86,7 +97,7 @@ export function AppSidebar({ user, inboxCount = 0 }: AppSidebarProps) {
           <h1 className="bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-2xl font-bold text-transparent">
             FlowOne
           </h1>
-          <p className="text-xs text-slate-500">Документооборот</p>
+          <p className="text-xs text-slate-500">HACCP Control • Production Control</p>
         </div>
 
         {/* User info */}
@@ -156,18 +167,63 @@ export function AppSidebar({ user, inboxCount = 0 }: AppSidebarProps) {
             );
           })}
 
+          {canViewAuditLog(user.role) && (
+            <>
+            <Link
+              href="/audit/checklist"
+              onClick={() => setIsMobileMenuOpen(false)}
+              className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all ${
+                pathname === "/audit/checklist"
+                  ? "bg-emerald-500/10 text-emerald-400"
+                  : "text-slate-400 hover:bg-slate-800/50 hover:text-white"
+              }`}
+            >
+              <ClipboardCheck className="h-5 w-5" />
+              <span className="flex-1">Audit Checklist</span>
+            </Link>
+
+            <Link
+              href="/audit/package"
+              onClick={() => setIsMobileMenuOpen(false)}
+              className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all ${
+                pathname === "/audit/package"
+                  ? "bg-emerald-500/10 text-emerald-400"
+                  : "text-slate-400 hover:bg-slate-800/50 hover:text-white"
+              }`}
+            >
+              <ScrollText className="h-5 w-5" />
+              <span className="flex-1">Пакет аудитора</span>
+            </Link>
+
+            <Link
+              href="/audit-log"
+              onClick={() => setIsMobileMenuOpen(false)}
+              className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all ${
+                pathname === "/audit-log"
+                  ? "bg-emerald-500/10 text-emerald-400"
+                  : "text-slate-400 hover:bg-slate-800/50 hover:text-white"
+              }`}
+            >
+              <ScrollText className="h-5 w-5" />
+              <span className="flex-1">Журнал действий</span>
+            </Link>
+            </>
+          )}
+
           <Separator className="my-4 bg-slate-800" />
 
-          <Link
-            href="/documents/new"
-            onClick={() => setIsMobileMenuOpen(false)}
-            className={`flex items-center gap-3 rounded-lg bg-gradient-to-r from-emerald-600 to-cyan-600 px-3 py-2 text-sm font-semibold text-white shadow-lg transition-all hover:from-emerald-700 hover:to-cyan-700 ${
-              pathname === "/documents/new" ? "ring-2 ring-emerald-400 ring-offset-2 ring-offset-slate-950" : ""
-            }`}
-          >
-            <PlusCircle className="h-5 w-5" />
-            <span>Новый документ</span>
-          </Link>
+          {!readOnly && (
+            <Link
+              href="/documents/new"
+              onClick={() => setIsMobileMenuOpen(false)}
+              className={`flex items-center gap-3 rounded-lg bg-gradient-to-r from-emerald-600 to-cyan-600 px-3 py-2 text-sm font-semibold text-white shadow-lg transition-all hover:from-emerald-700 hover:to-cyan-700 ${
+                pathname === "/documents/new" ? "ring-2 ring-emerald-400 ring-offset-2 ring-offset-slate-950" : ""
+              }`}
+            >
+              <PlusCircle className="h-5 w-5" />
+              <span>Новый регламент</span>
+            </Link>
+          )}
         </nav>
 
         {/* Logout */}

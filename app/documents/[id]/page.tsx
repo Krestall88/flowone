@@ -1,10 +1,11 @@
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Download, Calendar, User, Users, CheckCircle2, Clock, XCircle } from "lucide-react";
+import { Download, Calendar, User, Users, CheckCircle2, Clock, XCircle, ThermometerSun, NotebookTabs } from "lucide-react";
 
 import { prisma } from "@/lib/prisma";
-import { getCurrentUser } from "@/lib/session";
+import { getCurrentUser, isReadOnlyRole } from "@/lib/session";
 import { Button } from "@/components/ui/button";
+import { AcknowledgeButton } from "@/components/documents/acknowledge-button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
@@ -17,6 +18,7 @@ import { FilePreviewer } from "@/components/documents/file-preview";
 import { ExecutionPanel } from "@/components/documents/execution-panel";
 import { AppSidebar } from "@/components/layout/app-sidebar";
 import { getInboxCount } from "@/lib/inbox-count";
+import { BackButton } from "@/components/ui/back-button";
 
 interface DocumentPageProps {
   params: {
@@ -37,6 +39,8 @@ export default async function DocumentPage({ params }: DocumentPageProps) {
     redirect("/login");
   }
 
+  const readOnly = isReadOnlyRole(user.role);
+
   const userId = Number(user.id);
   if (Number.isNaN(userId)) {
     throw new Error("Некорректный идентификатор пользователя");
@@ -47,7 +51,7 @@ export default async function DocumentPage({ params }: DocumentPageProps) {
     notFound();
   }
 
-  const document = await prisma.document.findUnique({
+  const document = await (prisma as any).document.findUnique({
     where: { id: documentId },
     include: {
       author: {
@@ -56,6 +60,11 @@ export default async function DocumentPage({ params }: DocumentPageProps) {
           name: true,
           email: true,
           role: true,
+        },
+      },
+      registryDocument: {
+        select: {
+          id: true,
         },
       },
       recipient: {
@@ -123,7 +132,7 @@ export default async function DocumentPage({ params }: DocumentPageProps) {
   }
 
   // Check if user has access to this document
-  const isWatcher = document.watchers.some((watcher) => watcher.userId === userId);
+  const isWatcher = document.watchers.some((watcher: any) => watcher.userId === userId);
   const isResponsible = document.responsibleId === userId;
   const isAuthor = document.authorId === userId;
   const isRecipient = document.recipientId === userId;
@@ -132,28 +141,30 @@ export default async function DocumentPage({ params }: DocumentPageProps) {
     isRecipient ||
     isResponsible ||
     isWatcher ||
-    document.tasks.some((task) => task.assigneeId === userId);
+    document.tasks.some((task: any) => task.assigneeId === userId);
 
   if (!hasAccess) {
     notFound();
   }
 
-  const userTasks = document.tasks.filter((task) => task.assigneeId === userId);
-  const userFirstStep = userTasks.length > 0 ? Math.min(...userTasks.map((task) => task.step)) : null;
+  const userTasks = document.tasks.filter((task: any) => task.assigneeId === userId);
+  const userFirstStep = userTasks.length > 0 ? Math.min(...userTasks.map((task: any) => task.step)) : null;
   const beforeUserTurn = userFirstStep !== null && document.currentStep < userFirstStep;
   const isPrivilegedViewer = isAuthor || isRecipient || isResponsible || isWatcher;
 
   const statusInfo = getDocumentStatusLabel(document.status);
   
   // Find current pending task (excluding initiator step 0)
-  const currentTask = document.tasks.find((t) => t.status === "pending" && t.step > 0);
+  const currentTask = document.tasks.find((t: any) => t.status === "pending" && t.step > 0);
   const pendingActionMeta = currentTask ? getActionMeta(currentTask.action as TaskAction) : null;
 
-  const completedTasks = document.tasks.filter((t) => t.status === "approved" || t.status === "completed").length;
+  const completedTasks = document.tasks.filter((t: any) => t.status === "approved" || t.status === "completed").length;
   const totalTasks = document.tasks.length;
   const progress = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
 
   const inboxCount = await getInboxCount(userId);
+
+  const lastFile = document.files.length > 0 ? document.files[document.files.length - 1] : null;
 
   return (
     <div className="relative min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
@@ -169,18 +180,7 @@ export default async function DocumentPage({ params }: DocumentPageProps) {
       
       <main className="lg:ml-64">
         <div className="mx-auto max-w-6xl px-6 py-8">
-        {/* Back button */}
-        <Button
-          asChild
-          variant="ghost"
-          size="sm"
-          className="mb-6 text-slate-400 hover:text-white"
-        >
-          <Link href="/workflow">
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Назад к дашборду
-          </Link>
-        </Button>
+        <BackButton fallbackHref="/documents" label="Назад к списку" />
 
         <div className="space-y-6">
           {/* Header card */}
@@ -247,17 +247,60 @@ export default async function DocumentPage({ params }: DocumentPageProps) {
                   </div>
                 </div>
 
-                <Button
-                  variant="outline"
-                  size="sm"
-                  asChild
-                  className="border-slate-700 text-slate-300 hover:bg-slate-800"
-                >
-                  <a href={`/api/documents/${document.id}/pdf`} target="_blank" rel="noopener noreferrer">
-                    <Download className="mr-2 h-4 w-4" />
-                    Скачать PDF
-                  </a>
-                </Button>
+                <div className="flex flex-wrap items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    asChild
+                    className="border-slate-700 text-slate-300 hover:bg-slate-800"
+                  >
+                    <Link href={`/api/documents/${document.id}/pdf`}>
+                      <Download className="mr-2 h-4 w-4" />
+                      PDF
+                    </Link>
+                  </Button>
+
+                  {lastFile?.url && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      asChild
+                      className="border-slate-700 text-slate-300 hover:bg-slate-800"
+                    >
+                      <a href={lastFile.url} target="_blank" rel="noreferrer">
+                        Открыть файл
+                      </a>
+                    </Button>
+                  )}
+
+                  {!readOnly && !document.registryDocument && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      asChild
+                      className="border-emerald-700 text-emerald-200 hover:bg-emerald-950/40"
+                    >
+                      <Link href={`/registry/new?documentId=${document.id}`}>
+                        Добавить в реестр
+                      </Link>
+                    </Button>
+                  )}
+
+                  {document.registryDocument && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      asChild
+                      className="border-emerald-700 text-emerald-200 hover:bg-emerald-950/40"
+                    >
+                      <Link href={`/registry?documentId=${document.id}`}>
+                        Открыть в реестре
+                      </Link>
+                    </Button>
+                  )}
+
+                  {!readOnly && <AcknowledgeButton documentId={document.id} />}
+                </div>
               </div>
             </CardHeader>
           </Card>
@@ -280,7 +323,7 @@ export default async function DocumentPage({ params }: DocumentPageProps) {
                 {document.tasks.length > 1 && (
                   <div className="absolute left-6 top-10 bottom-10 w-0.5 bg-slate-800" />
                 )}
-                {document.tasks.map((task, index) => {
+                {document.tasks.map((task: any, index: any) => {
                   const isInitiator = task.step === 0;
                   const actionMeta = isInitiator ? { label: "Инициатор" } : getActionMeta(task.action as TaskAction);
                   const isCompleted = task.status === "approved" || task.status === "completed";
@@ -359,6 +402,7 @@ export default async function DocumentPage({ params }: DocumentPageProps) {
                               actionType={task.action as TaskAction}
                               canSkip={task.canSkip}
                               commentRequired={task.commentRequired}
+                              currentUserRole={user.role}
                             />
                           </div>
                         )}
@@ -373,26 +417,30 @@ export default async function DocumentPage({ params }: DocumentPageProps) {
           {/* Content card */}
           <Card className="border-slate-800 bg-slate-900/50 backdrop-blur-sm">
             <CardHeader>
-              <CardTitle className="text-xl text-white">Содержание документа</CardTitle>
+              <CardTitle className="text-xl text-white">Текст регламента</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="prose prose-invert max-w-none">
-                <p className="text-slate-300 leading-relaxed whitespace-pre-wrap">{document.body}</p>
+                <div className="whitespace-pre-wrap text-slate-300">
+                  {document.body || "Текст документа отсутствует"}
+                </div>
               </div>
             </CardContent>
           </Card>
 
           {/* Files */}
-          {document.files.length > 0 && (
-            <Card className="border-slate-800 bg-slate-900/50 backdrop-blur-sm">
-              <CardHeader>
-                <CardTitle className="text-xl text-white">Прикреплённые файлы</CardTitle>
-              </CardHeader>
-              <CardContent>
+          <Card className="border-slate-800 bg-slate-900/50 backdrop-blur-sm">
+            <CardHeader>
+              <CardTitle className="text-xl text-white">Прикреплённые файлы</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {document.files.length > 0 ? (
                 <FilePreviewer files={document.files} />
-              </CardContent>
-            </Card>
-          )}
+              ) : (
+                <div className="text-sm text-slate-400">Файлы не прикреплены.</div>
+              )}
+            </CardContent>
+          </Card>
 
           {/* Watchers */}
           {document.watchers.length > 0 && (
@@ -402,7 +450,7 @@ export default async function DocumentPage({ params }: DocumentPageProps) {
               </CardHeader>
               <CardContent>
                 <div className="flex flex-wrap gap-3">
-                  {document.watchers.map((watcher) => (
+                  {document.watchers.map((watcher: any) => (
                     <div
                       key={watcher.id}
                       className="flex items-center gap-2 rounded-full border border-slate-700 bg-slate-800/50 px-4 py-2"
@@ -425,7 +473,7 @@ export default async function DocumentPage({ params }: DocumentPageProps) {
               authorId={document.authorId}
               responsibleId={document.responsibleId}
               recipientId={document.recipientId}
-              executionAssignments={document.executionAssignments.map((ea) => ({
+              executionAssignments={document.executionAssignments.map((ea: any) => ({
                 id: ea.id,
                 assigneeId: ea.assigneeId,
                 status: ea.status as any,

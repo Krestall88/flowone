@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Rocket, TrendingUp, Clock, CheckCircle2 } from "lucide-react";
 
 import { prisma } from "@/lib/prisma";
-import { requireUser } from "@/lib/session";
+import { isReadOnlyRole, requireUser } from "@/lib/session";
 import { Button } from "@/components/ui/button";
 import { DocumentTable } from "@/components/dashboard/document-table";
 import { Card, CardContent } from "@/components/ui/card";
@@ -11,7 +11,7 @@ import { AppSidebar } from "@/components/layout/app-sidebar";
 const scopeConfig = {
   inbox: {
     label: "Входящие",
-    description: "Новые документы на согласование",
+    description: "Новые регламенты/инструкции на согласование",
     icon: Clock,
     where: (userId: number) => ({
       AND: [
@@ -28,7 +28,7 @@ const scopeConfig = {
   },
   in_progress: {
     label: "На согласовании",
-    description: "Документы в процессе, где вы уже отработали",
+    description: "Регламенты в процессе, где вы уже отработали",
     icon: TrendingUp,
     where: (userId: number) => ({
       AND: [
@@ -50,7 +50,7 @@ const scopeConfig = {
   },
   archive: {
     label: "Архив",
-    description: "Завершённая цепочка согласования",
+    description: "Утверждённые/исполненные регламенты",
     icon: CheckCircle2,
     where: (userId: number) => ({
       AND: [
@@ -87,6 +87,7 @@ export default async function WorkflowDashboardPage({
 }) {
   const sessionUser = await requireUser();
   const userId = Number(sessionUser.id);
+  const readOnly = isReadOnlyRole(sessionUser.role);
   const scopeParam = (searchParams.scope as ScopeKey) ?? DEFAULT_SCOPE;
   const scope = scopeParam in scopeConfig ? scopeParam : DEFAULT_SCOPE;
 
@@ -206,18 +207,18 @@ export default async function WorkflowDashboardPage({
                   </div>
                   <p className="mb-2 text-lg font-medium text-slate-400">Документов нет</p>
                   <p className="text-sm text-slate-500">
-                    {scope === "inbox" && "У вас нет задач, требующих вашего внимания"}
-                    {scope === "in_progress" && "Нет документов на согласовании"}
-                    {scope === "archive" && "Архив пуст"}
+                    {scope === "inbox" && "У вас нет регламентов, требующих вашего внимания"}
+                    {scope === "in_progress" && "Нет регламентов на согласовании"}
+                    {scope === "archive" && "Архив регламентов пуст"}
                   </p>
-                  {scope === "inbox" && (
+                  {scope === "inbox" && !readOnly && (
                     <Button
                       asChild
                       className="mt-6 bg-gradient-to-r from-emerald-600 to-cyan-600 hover:from-emerald-700 hover:to-cyan-700"
                     >
                       <Link href="/documents/new">
                         <Rocket className="mr-2 h-4 w-4" />
-                        Создать первый документ
+                        Создать регламент
                       </Link>
                     </Button>
                   )}

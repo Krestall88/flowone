@@ -1,12 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { prisma } from "@/lib/prisma";
-import { requireUser } from "@/lib/session";
+import { isReadOnlyRole, requireUser } from "@/lib/session";
 import { parseToUTCDate, todayUTC } from "@/lib/date-utils";
+import { logAudit } from "@/lib/audit-log";
+import { isAuditModeActive, auditModeLockedResponse } from "@/lib/audit-session";
 
 export async function POST(req: NextRequest) {
   try {
+    const prismaAny = prisma as any;
     const sessionUser = await requireUser();
+    if (isReadOnlyRole(sessionUser.role)) {
+      return NextResponse.json({ error: "Роль только для просмотра" }, { status: 403 });
+    }
     if (!sessionUser.email) {
       return NextResponse.json(
         { error: "В сессии отсутствует email пользователя" },
@@ -28,6 +34,11 @@ export async function POST(req: NextRequest) {
     const formData = await req.formData();
 
     const rawDate = formData.get("date");
+    const rawDocumentId = formData.get("documentId");
+    const documentId =
+      typeof rawDocumentId === "string" && rawDocumentId.trim()
+        ? Number(rawDocumentId)
+        : null;
 
     const entriesMap = new Map<
       number,
@@ -60,11 +71,37 @@ export async function POST(req: NextRequest) {
       day = parseToUTCDate(rawDate);
     }
 
+    const today = todayUTC();
+    if (day.getTime() !== today.getTime()) {
+      return NextResponse.json(
+        { error: "Запись журнала разрешена только за текущий день" },
+        { status: 403 },
+      );
+    }
+
     const now = new Date();
 
-    await prisma.$transaction(
+    if (await isAuditModeActive()) {
+      const equipmentIds = Array.from(entriesMap.keys());
+      const existing = await prismaAny.temperatureEntry.findFirst({
+        where: {
+          date: day,
+          equipmentId: { in: equipmentIds },
+        },
+        select: { id: true },
+      });
+
+      if (existing) {
+        return NextResponse.json(
+          auditModeLockedResponse("В режиме проверки запрещено перезаписывать журнал температур за день"),
+          { status: 403 },
+        );
+      }
+    }
+
+    await prismaAny.$transaction(
       Array.from(entriesMap.entries()).map(([equipmentId, { morning, day: dayValue, evening }]) =>
-        prisma.temperatureEntry.upsert({
+        prismaAny.temperatureEntry.upsert({
           where: {
             equipmentId_date: {
               equipmentId,
@@ -77,6 +114,7 @@ export async function POST(req: NextRequest) {
             evening: evening ?? undefined,
             userId: dbUser.id,
             signedAt: now,
+            documentId: documentId && !Number.isNaN(documentId) ? documentId : undefined,
           },
           create: {
             equipmentId,
@@ -86,10 +124,22 @@ export async function POST(req: NextRequest) {
             evening: evening ?? undefined,
             userId: dbUser.id,
             signedAt: now,
+            documentId: documentId && !Number.isNaN(documentId) ? documentId : undefined,
           },
         }),
       ),
     );
+
+    await logAudit({
+      actorId: dbUser.id,
+      action: "journal.temperature.sign",
+      entityType: "temperatureEntry",
+      meta: {
+        date: day.toISOString(),
+        entriesCount: entriesMap.size,
+        documentId: documentId && !Number.isNaN(documentId) ? documentId : null,
+      },
+    });
 
     return NextResponse.json({ success: true });
   } catch (err) {

@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CheckCircle2, Copy, Clock, X } from "lucide-react";
+import { isReadOnlyRole } from "@/lib/roles";
 
 interface TelegramBindingData {
   isBound: boolean;
@@ -21,7 +22,7 @@ interface BindingCodeData {
   instructions: string;
 }
 
-export function TelegramBindingWidget() {
+export function TelegramBindingWidget({ currentUserRole }: { currentUserRole?: string }) {
   const [bindingData, setBindingData] = useState<TelegramBindingData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -29,6 +30,8 @@ export function TelegramBindingWidget() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [timeLeft, setTimeLeft] = useState<number | null>(null);
   const [copied, setCopied] = useState(false);
+
+  const readOnly = isReadOnlyRole(currentUserRole);
 
   useEffect(() => {
     loadBindingStatus();
@@ -195,6 +198,7 @@ export function TelegramBindingWidget() {
                 onClick={unbindTelegram}
                 variant="outline"
                 className="w-full border-red-800 text-red-400 hover:bg-red-950/50 hover:text-red-300"
+                disabled={readOnly}
               >
                 Отвязать Telegram
               </Button>
@@ -206,13 +210,15 @@ export function TelegramBindingWidget() {
                 и важных событиях прямо в мессенджер.
               </p>
 
-              <Button
-                onClick={generateCode}
-                disabled={isGenerating}
-                className="w-full bg-gradient-to-r from-emerald-600 to-cyan-600 hover:from-emerald-700 hover:to-cyan-700"
-              >
-                {isGenerating ? "Генерация..." : "Привязать Telegram"}
-              </Button>
+              {!readOnly && (
+                <Button
+                  onClick={generateCode}
+                  disabled={isGenerating}
+                  className="w-full bg-gradient-to-r from-emerald-600 to-cyan-600 hover:from-emerald-700 hover:to-cyan-700"
+                >
+                  {isGenerating ? "Генерация..." : "Привязать Telegram"}
+                </Button>
+              )}
             </>
           )}
         </CardContent>

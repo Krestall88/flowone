@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireUser } from "@/lib/session";
+import { isReadOnlyRole, requireUser } from "@/lib/session";
 import { sendTaskNotification, sendDocumentStatusUpdate } from "@/lib/telegram";
 
 type Decision = "complete" | "reject" | "skip";
@@ -11,6 +11,9 @@ export async function PATCH(
 ) {
   try {
     const user = await requireUser();
+    if (isReadOnlyRole(user.role)) {
+      return NextResponse.json({ error: "Роль только для просмотра" }, { status: 403 });
+    }
     const userId = Number(user.id);
     if (!Number.isFinite(userId)) {
       return NextResponse.json({ error: "Некорректный пользователь" }, { status: 400 });

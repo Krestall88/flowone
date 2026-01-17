@@ -1,10 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { prisma } from "@/lib/prisma";
-import { requireUser } from "@/lib/session";
+import { isReadOnlyRole, requireUser } from "@/lib/session";
+import { isAuditModeActive, auditModeLockedResponse } from "@/lib/audit-session";
 
 export async function POST(req: NextRequest) {
-  await requireUser();
+  const user = await requireUser();
+  if (isReadOnlyRole(user.role)) {
+    return NextResponse.json({ error: "Роль только для просмотра" }, { status: 403 });
+  }
+
+  if (await isAuditModeActive()) {
+    return NextResponse.json(auditModeLockedResponse(), { status: 403 });
+  }
 
   let body: unknown;
   try {

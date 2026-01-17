@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
 import { prisma } from "@/lib/prisma";
-import { requireUser } from "@/lib/session";
+import { isReadOnlyRole, requireUser } from "@/lib/session";
+import { isAuditModeActive, auditModeLockedResponse } from "@/lib/audit-session";
 
 const assignSchema = z.object({
   assignments: z
@@ -32,6 +33,9 @@ const EXECUTION_FLOW: Record<string, string[]> = {
 
 export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
   const user = await requireUser();
+  if (isReadOnlyRole(user.role)) {
+    return NextResponse.json({ error: "Роль только для просмотра" }, { status: 403 });
+  }
   const documentId = Number(params.id);
 
   if (!Number.isFinite(documentId)) {
@@ -55,6 +59,12 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
 
   if (!document) {
     return NextResponse.json({ error: "Документ не найден" }, { status: 404 });
+  }
+
+  if (document.status === "approved" && (await isAuditModeActive())) {
+    return NextResponse.json(auditModeLockedResponse("В режиме проверки запрещено менять исполнение утверждённых документов"), {
+      status: 403,
+    });
   }
 
   const canManage = document.authorId === userId || document.responsibleId === userId || user.role === "director";
@@ -125,6 +135,9 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
 
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
   const user = await requireUser();
+  if (isReadOnlyRole(user.role)) {
+    return NextResponse.json({ error: "Роль только для просмотра" }, { status: 403 });
+  }
   const documentId = Number(params.id);
 
   if (!Number.isFinite(documentId)) {
@@ -148,6 +161,12 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 
   if (!assignment || assignment.documentId !== documentId) {
     return NextResponse.json({ error: "Исполнитель не найден" }, { status: 404 });
+  }
+
+  if (assignment.document.status === "approved" && (await isAuditModeActive())) {
+    return NextResponse.json(auditModeLockedResponse("В режиме проверки запрещено менять исполнение утверждённых документов"), {
+      status: 403,
+    });
   }
 
   if (assignment.assigneeId !== userId) {

@@ -1,11 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { prisma } from "@/lib/prisma";
-import { requireUser } from "@/lib/session";
+import { isReadOnlyRole, requireUser } from "@/lib/session";
+import { isAuditModeActive, auditModeLockedResponse } from "@/lib/audit-session";
 
 // Создание нового сотрудника
 export async function POST(req: NextRequest) {
-  await requireUser();
+  const user = await requireUser();
+  if (isReadOnlyRole(user.role)) {
+    return NextResponse.json({ error: "Роль только для просмотра" }, { status: 403 });
+  }
+
+  if (await isAuditModeActive()) {
+    return NextResponse.json(auditModeLockedResponse(), { status: 403 });
+  }
 
   const body = await req.json().catch(() => null);
   const name = typeof body?.name === "string" ? body.name.trim() : "";
@@ -28,7 +36,14 @@ export async function POST(req: NextRequest) {
 
 // Редактирование ФИО/должности/активности
 export async function PATCH(req: NextRequest) {
-  await requireUser();
+  const user = await requireUser();
+  if (isReadOnlyRole(user.role)) {
+    return NextResponse.json({ error: "Роль только для просмотра" }, { status: 403 });
+  }
+
+  if (await isAuditModeActive()) {
+    return NextResponse.json(auditModeLockedResponse(), { status: 403 });
+  }
 
   const body = await req.json().catch(() => null);
   const id = Number(body?.id);
@@ -65,7 +80,14 @@ export async function PATCH(req: NextRequest) {
 
 // Полное удаление сотрудника (вместе с его отметками в журнале здоровья)
 export async function DELETE(req: NextRequest) {
-  await requireUser();
+  const user = await requireUser();
+  if (isReadOnlyRole(user.role)) {
+    return NextResponse.json({ error: "Роль только для просмотра" }, { status: 403 });
+  }
+
+  if (await isAuditModeActive()) {
+    return NextResponse.json(auditModeLockedResponse(), { status: 403 });
+  }
 
   const url = new URL(req.url);
   const idParam = url.searchParams.get("id");

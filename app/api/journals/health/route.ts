@@ -1,12 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { prisma } from "@/lib/prisma";
-import { requireUser } from "@/lib/session";
+import { Prisma } from "@prisma/client";
+import { isReadOnlyRole, requireUser } from "@/lib/session";
 import { parseToUTCDate, todayUTC } from "@/lib/date-utils";
+import { logAudit } from "@/lib/audit-log";
+import { isAuditModeActive, auditModeLockedResponse } from "@/lib/audit-session";
 
 export async function POST(req: NextRequest) {
   try {
     const sessionUser = await requireUser();
+    if (isReadOnlyRole(sessionUser.role)) {
+      return NextResponse.json({ error: "Роль только для просмотра" }, { status: 403 });
+    }
     if (!sessionUser.email) {
       return NextResponse.json(
         { error: "В сессии отсутствует email пользователя" },
@@ -28,6 +34,11 @@ export async function POST(req: NextRequest) {
     const formData = await req.formData();
 
     const rawDate = formData.get("date");
+    const rawDocumentId = formData.get("documentId");
+    const documentId =
+      typeof rawDocumentId === "string" && rawDocumentId.trim()
+        ? Number(rawDocumentId)
+        : null;
 
     type Entry = { employeeId: number; status: string; note?: string | null };
     const entries: Entry[] = [];
@@ -67,6 +78,14 @@ export async function POST(req: NextRequest) {
       day = parseToUTCDate(rawDate);
     }
 
+    const today = todayUTC();
+    if (day.getTime() !== today.getTime()) {
+      return NextResponse.json(
+        { error: "Запись журнала разрешена только за текущий день" },
+        { status: 403 },
+      );
+    }
+
     const now = new Date();
 
     // Ищем уже существующие записи журнала здоровья за этот день для текущего пользователя
@@ -78,6 +97,13 @@ export async function POST(req: NextRequest) {
       },
       select: { id: true },
     });
+
+    if ((await isAuditModeActive()) && existingChecks.length > 0) {
+      return NextResponse.json(
+        auditModeLockedResponse("В режиме проверки запрещено перезаписывать журнал здоровья за день"),
+        { status: 403 },
+      );
+    }
 
     if (existingChecks.length > 0) {
       const checkIds = existingChecks.map((check) => check.id);
@@ -98,18 +124,39 @@ export async function POST(req: NextRequest) {
     }
 
     // Создаём свежую запись журнала здоровья за день
-    await prisma.healthCheck.create({
-      data: {
-        userId: dbUser.id,
-        date: day,
-        signedAt: now,
-        entries: {
-          create: entries.map((e) => ({
-            employeeId: e.employeeId,
-            status: e.status,
-            note: e.note ?? undefined,
-          })),
-        },
+    const createData: Prisma.HealthCheckCreateInput = {
+      user: { connect: { id: dbUser.id } },
+      date: day,
+      signedAt: now,
+      ...(documentId && !Number.isNaN(documentId)
+        ? {
+            document: {
+              connect: { id: documentId },
+            },
+          }
+        : {}),
+      entries: {
+        create: entries.map((e) => ({
+          employee: { connect: { id: e.employeeId } },
+          status: e.status,
+          note: e.note ?? undefined,
+        })),
+      },
+    };
+
+    const created = await prisma.healthCheck.create({
+      data: createData,
+    });
+
+    await logAudit({
+      actorId: dbUser.id,
+      action: "journal.health.sign",
+      entityType: "healthCheck",
+      entityId: created.id,
+      meta: {
+        date: day.toISOString(),
+        entriesCount: entries.length,
+        documentId: documentId && !Number.isNaN(documentId) ? documentId : null,
       },
     });
 

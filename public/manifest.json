@@ -1,0 +1,49 @@
+{
+  "name": "Production HACCP Control",
+  "short_name": "HACCP Control",
+  "description": "Система управления HACCP для производства",
+  "start_url": "/dashboard",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#10b981",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["productivity", "business"],
+  "screenshots": [],
+  "shortcuts": [
+    {
+      "name": "Журналы",
+      "short_name": "Журналы",
+      "description": "Открыть журналы",
+      "url": "/journals",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "HACCP Plan",
+      "short_name": "HACCP",
+      "description": "Открыть HACCP Plan",
+      "url": "/haccp-plan",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Уведомления",
+      "short_name": "Уведомления",
+      "description": "Открыть уведомления",
+      "url": "/notifications",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    }
+  ]
+}
