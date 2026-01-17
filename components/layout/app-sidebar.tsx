@@ -148,7 +148,6 @@ export function AppSidebar({ user, inboxCount = 0 }: AppSidebarProps) {
               <Link
                 key={item.name}
                 href={item.href}
-                onClick={() => setIsMobileMenuOpen(false)}
                 className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all ${
                   isActive
                     ? "bg-emerald-500/10 text-emerald-400"
@@ -170,7 +169,6 @@ export function AppSidebar({ user, inboxCount = 0 }: AppSidebarProps) {
             <>
             <Link
               href="/audit/checklist"
-              onClick={() => setIsMobileMenuOpen(false)}
               className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all ${
                 pathname === "/audit/checklist"
                   ? "bg-emerald-500/10 text-emerald-400"
@@ -183,7 +181,6 @@ export function AppSidebar({ user, inboxCount = 0 }: AppSidebarProps) {
 
             <Link
               href="/audit/package"
-              onClick={() => setIsMobileMenuOpen(false)}
               className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all ${
                 pathname === "/audit/package"
                   ? "bg-emerald-500/10 text-emerald-400"
@@ -196,7 +193,6 @@ export function AppSidebar({ user, inboxCount = 0 }: AppSidebarProps) {
 
             <Link
               href="/audit-log"
-              onClick={() => setIsMobileMenuOpen(false)}
               className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all ${
                 pathname === "/audit-log"
                   ? "bg-emerald-500/10 text-emerald-400"
@@ -214,7 +210,6 @@ export function AppSidebar({ user, inboxCount = 0 }: AppSidebarProps) {
           {!readOnly && (
             <Link
               href="/documents/new"
-              onClick={() => setIsMobileMenuOpen(false)}
               className={`flex items-center gap-3 rounded-lg bg-gradient-to-r from-emerald-600 to-cyan-600 px-3 py-2 text-sm font-semibold text-white shadow-lg transition-all hover:from-emerald-700 hover:to-cyan-700 ${
                 pathname === "/documents/new" ? "ring-2 ring-emerald-400 ring-offset-2 ring-offset-slate-950" : ""
               }`}
