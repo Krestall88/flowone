@@ -17,14 +17,14 @@ interface CCP {
   criticalLimits: string | null;
   responsiblePerson: string | null;
   status: string;
-  createdAt: string;
+  createdAt: Date;
   relatedDocument?: { id: number; title: string } | null;
   relatedNonconformity?: { id: number; title: string } | null;
   actions?: Array<{
     id: number;
     actionType: string;
     description: string;
-    takenAt: string;
+    takenAt: Date;
   }>;
 }
 
@@ -154,7 +154,7 @@ export function CCPTable({ ccps, onRefresh }: CCPTableProps) {
                                        action.actionType === "corrective" ? "Корректирующее" :
                                        "Пересмотр"}
                                     </Badge>
-                                    <span>{new Date(action.takenAt).toLocaleString("ru-RU")}</span>
+                                    <span>{action.takenAt.toLocaleString("ru-RU")}</span>
                                   </div>
                                   <p className="mt-1 text-sm text-slate-300">{action.description}</p>
                                 </div>
