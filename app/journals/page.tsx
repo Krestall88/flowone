@@ -9,6 +9,8 @@ import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { JournalsDateToolbar } from "@/components/journals/journals-date-toolbar";
 
+export const dynamic = 'force-dynamic';
+
 const journals = [
   {
     id: 1,

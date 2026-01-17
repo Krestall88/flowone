@@ -34,7 +34,6 @@ const navigation = [
   { name: "Регламенты", href: "/workflow", icon: Home, exact: true, showBadge: true },
   { name: "Документы для проверок", href: "/registry", icon: ClipboardCheck, exact: true },
   { name: "Пакет для проверки", href: "/registry/package", icon: ClipboardCheck, exact: false },
-  { name: "Audit Checklist", href: "/audit/checklist", icon: CheckSquare, exact: true },
   { name: "HACCP Plan", href: "/haccp-plan", icon: Shield, exact: false },
   { name: "Уведомления", href: "/notifications", icon: Bell, exact: true, showNotificationBadge: true },
   { name: "Несоответствия", href: "/nonconformities", icon: AlertTriangle, exact: true },
