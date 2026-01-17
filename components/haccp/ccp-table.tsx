@@ -14,12 +14,12 @@ interface CCP {
   riskLevel: string;
   controlMeasures: string;
   correctiveActions: string;
-  criticalLimits?: string;
-  responsiblePerson?: string;
+  criticalLimits: string | null;
+  responsiblePerson: string | null;
   status: string;
   createdAt: string;
-  relatedDocument?: { id: number; title: string };
-  relatedNonconformity?: { id: number; title: string };
+  relatedDocument?: { id: number; title: string } | null;
+  relatedNonconformity?: { id: number; title: string } | null;
   actions?: Array<{
     id: number;
     actionType: string;
