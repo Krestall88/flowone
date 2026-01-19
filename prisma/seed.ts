@@ -17,8 +17,9 @@ async function main() {
   await (prisma as any).cCP.deleteMany();
   await (prisma as any).labTest.deleteMany();
 
-  // Очистка данных документооборота
+  // Очистка данных документооборота (в порядке зависимостей)
   await (prisma as any).auditLog.deleteMany();
+  await (prisma as any).auditSession.deleteMany(); // Удаляем перед User из-за внешнего ключа
   await (prisma as any).nonconformity.deleteMany();
   await (prisma as any).registryDocument.deleteMany();
   await prisma.executionAssignment.deleteMany();
