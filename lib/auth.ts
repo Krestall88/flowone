@@ -60,6 +60,18 @@ export const authOptions: AuthOptions = {
       }
       return session;
     },
+    async redirect({ url, baseUrl }) {
+      // Если URL начинается с baseUrl, используем его
+      if (url.startsWith(baseUrl)) {
+        return url;
+      }
+      // Если URL относительный, добавляем baseUrl
+      if (url.startsWith("/")) {
+        return `${baseUrl}${url}`;
+      }
+      // По умолчанию возвращаем на dashboard
+      return `${baseUrl}/dashboard`;
+    },
   },
   secret: process.env.NEXTAUTH_SECRET,
 };
