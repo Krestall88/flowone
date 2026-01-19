@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { isReadOnlyRole } from "@/lib/roles";
+import { CategoriesManager } from "@/components/master-data/categories-manager";
 
 type EmployeeItem = {
   id: number;
@@ -42,7 +43,7 @@ export function MasterDataManager({
   currentUserRole?: string;
 }) {
   const readOnly = isReadOnlyRole(currentUserRole);
-  const [section, setSection] = useState<"employees" | "locations" | "equipment">("employees");
+  const [section, setSection] = useState<"employees" | "locations" | "equipment" | "categories">("employees");
 
   const [search, setSearch] = useState("");
 
@@ -295,6 +296,14 @@ export function MasterDataManager({
           className={section === "equipment" ? "bg-emerald-600 hover:bg-emerald-500" : "border-slate-700 text-white hover:bg-slate-800"}
         >
           Оборудование
+        </Button>
+        <Button
+          type="button"
+          variant={section === "categories" ? "default" : "outline"}
+          onClick={() => setSection("categories")}
+          className={section === "categories" ? "bg-emerald-600 hover:bg-emerald-500" : "border-slate-700 text-white hover:bg-slate-800"}
+        >
+          Категории
         </Button>
       </div>
 
@@ -631,6 +640,10 @@ export function MasterDataManager({
                 })}
               </div>
             </div>
+          )}
+
+          {section === "categories" && (
+            <CategoriesManager currentUserRole={currentUserRole || "employee"} />
           )}
         </CardContent>
       </Card>
