@@ -1,6 +1,7 @@
 "use client";
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { AlertTriangle } from "lucide-react";
 
 interface RiskMatrixProps {
   ccps: Array<{
@@ -28,78 +29,121 @@ export function RiskMatrix({ ccps }: RiskMatrixProps) {
   // Определяем цвет ячейки на основе риска (severity * probability)
   const getCellColor = (severity: number, probability: number) => {
     const score = severity * probability;
-    if (score >= 15) return "bg-red-500/20 border-red-500/40";
-    if (score >= 10) return "bg-yellow-500/20 border-yellow-500/40";
-    return "bg-green-500/20 border-green-500/40";
+    if (score >= 15) return "bg-red-600/30 border-2 border-red-500/60";
+    if (score >= 10) return "bg-amber-600/30 border-2 border-amber-500/60";
+    return "bg-emerald-600/20 border border-emerald-500/40";
   };
 
   const getCellTextColor = (severity: number, probability: number) => {
     const score = severity * probability;
-    if (score >= 15) return "text-red-300";
-    if (score >= 10) return "text-yellow-300";
-    return "text-green-300";
+    if (score >= 15) return "text-red-200";
+    if (score >= 10) return "text-amber-200";
+    return "text-emerald-200";
+  };
+
+  const getRiskLabel = (score: number) => {
+    if (score >= 15) return "ВЫСОКИЙ";
+    if (score >= 10) return "СРЕДНИЙ";
+    return "НИЗКИЙ";
   };
 
   return (
     <Card className="border-slate-800 bg-slate-900/50 backdrop-blur-sm">
       <CardHeader>
-        <CardTitle className="text-white">Матрица рисков HACCP</CardTitle>
-        <CardDescription className="text-slate-400">
-          Распределение критических контрольных точек по уровню риска (Тяжесть × Вероятность)
-        </CardDescription>
+        <div className="flex items-start justify-between">
+          <div>
+            <CardTitle className="text-white flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-amber-400" />
+              Матрица оценки рисков HACCP
+            </CardTitle>
+            <CardDescription className="mt-2 text-slate-400">
+              Каждая критическая точка оценивается по двум параметрам: насколько <strong>серьёзны последствия</strong> (по горизонтали) 
+              и насколько <strong>часто это может произойти</strong> (по вертикали)
+            </CardDescription>
+          </div>
+        </div>
       </CardHeader>
       <CardContent>
         <div className="overflow-x-auto">
           <div className="inline-block min-w-full">
-            {/* Заголовок таблицы */}
-            <div className="mb-2 flex items-center gap-2">
-              <div className="w-24 text-xs text-slate-400"></div>
-              <div className="flex-1 text-center text-xs font-semibold text-slate-300">
-                Тяжесть последствий →
+            {/* Инструкция */}
+            <div className="mb-4 rounded-lg bg-slate-800/50 p-3 text-sm text-slate-300">
+              <strong className="text-white">Как читать матрицу:</strong> Чем правее и выше находится точка, тем опаснее риск. 
+              Красные зоны требуют немедленного внимания!
+            </div>
+
+            {/* Заголовок верхней оси */}
+            <div className="mb-3 flex items-center gap-2">
+              <div className="w-32"></div>
+              <div className="flex-1 text-center">
+                <div className="text-sm font-bold text-white">НАСКОЛЬКО СЕРЬЁЗНЫ ПОСЛЕДСТВИЯ? →</div>
+                <div className="text-xs text-slate-400 mt-1">(если риск реализуется)</div>
               </div>
             </div>
             
-            <div className="flex gap-2">
+            <div className="flex gap-3">
               {/* Левая ось (Вероятность) */}
-              <div className="flex flex-col justify-between py-2">
-                <div className="flex h-full flex-col justify-between">
-                  <div className="text-xs text-slate-400">Очень часто (5)</div>
-                  <div className="text-xs text-slate-400">Часто (4)</div>
-                  <div className="text-xs text-slate-400">Иногда (3)</div>
-                  <div className="text-xs text-slate-400">Редко (2)</div>
-                  <div className="text-xs text-slate-400">Очень редко (1)</div>
+              <div className="flex w-32 flex-col">
+                <div className="mb-2 text-center">
+                  <div className="text-sm font-bold text-white">КАК ЧАСТО?</div>
+                  <div className="text-xs text-slate-400">(вероятность)</div>
                 </div>
-                <div className="mt-2 -rotate-90 origin-center text-xs font-semibold text-slate-300 whitespace-nowrap">
-                  ← Вероятность
+                <div className="flex flex-1 flex-col justify-around">
+                  <div className="text-center">
+                    <div className="text-xs font-semibold text-white">5</div>
+                    <div className="text-[10px] text-slate-400">Очень часто</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-xs font-semibold text-white">4</div>
+                    <div className="text-[10px] text-slate-400">Часто</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-xs font-semibold text-white">3</div>
+                    <div className="text-[10px] text-slate-400">Иногда</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-xs font-semibold text-white">2</div>
+                    <div className="text-[10px] text-slate-400">Редко</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-xs font-semibold text-white">1</div>
+                    <div className="text-[10px] text-slate-400">Очень редко</div>
+                  </div>
                 </div>
               </div>
 
               {/* Матрица */}
               <div className="flex-1">
-                <div className="grid grid-cols-5 gap-1">
+                <div className="grid grid-cols-5 gap-2">
                   {matrix.map((row, rowIdx) => (
                     row.map((cell, colIdx) => {
                       const severity = colIdx + 1;
                       const probability = 5 - rowIdx;
                       const score = severity * probability;
+                      const riskLabel = getRiskLabel(score);
                       
                       return (
                         <div
                           key={`${rowIdx}-${colIdx}`}
-                          className={`relative min-h-[80px] rounded border p-2 transition-all hover:scale-105 ${getCellColor(severity, probability)}`}
+                          className={`relative min-h-[90px] rounded-lg p-2 transition-all hover:scale-105 ${getCellColor(severity, probability)}`}
                         >
-                          <div className={`text-xs font-semibold ${getCellTextColor(severity, probability)}`}>
-                            {score}
+                          <div className="flex items-center justify-between mb-1">
+                            <div className={`text-[10px] font-bold uppercase ${getCellTextColor(severity, probability)}`}>
+                              {riskLabel}
+                            </div>
+                            <div className={`text-xs font-semibold ${getCellTextColor(severity, probability)}`}>
+                              {score}
+                            </div>
                           </div>
                           {cell.length > 0 && (
-                            <div className="mt-1 space-y-1">
+                            <div className="space-y-1">
                               {cell.map((ccp) => (
                                 <div
                                   key={ccp.id}
-                                  className="rounded bg-slate-950/50 px-1.5 py-0.5 text-[10px] text-slate-200 truncate"
+                                  className="rounded bg-slate-950/60 px-1.5 py-1 text-[10px] leading-tight text-slate-100"
                                   title={ccp.process}
                                 >
-                                  {ccp.process.length > 20 ? `${ccp.process.substring(0, 20)}...` : ccp.process}
+                                  {ccp.process.length > 18 ? `${ccp.process.substring(0, 18)}...` : ccp.process}
                                 </div>
                               ))}
                             </div>
@@ -111,29 +155,62 @@ export function RiskMatrix({ ccps }: RiskMatrixProps) {
                 </div>
                 
                 {/* Нижняя ось (Тяжесть) */}
-                <div className="mt-2 grid grid-cols-5 gap-1 text-center">
-                  <div className="text-xs text-slate-400">Незначит. (1)</div>
-                  <div className="text-xs text-slate-400">Малая (2)</div>
-                  <div className="text-xs text-slate-400">Средняя (3)</div>
-                  <div className="text-xs text-slate-400">Серьёзная (4)</div>
-                  <div className="text-xs text-slate-400">Катастроф. (5)</div>
+                <div className="mt-3 grid grid-cols-5 gap-2">
+                  <div className="text-center">
+                    <div className="text-xs font-semibold text-white">1</div>
+                    <div className="text-[10px] text-slate-400">Незначит.</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-xs font-semibold text-white">2</div>
+                    <div className="text-[10px] text-slate-400">Малая</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-xs font-semibold text-white">3</div>
+                    <div className="text-[10px] text-slate-400">Средняя</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-xs font-semibold text-white">4</div>
+                    <div className="text-[10px] text-slate-400">Серьёзная</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-xs font-semibold text-white">5</div>
+                    <div className="text-[10px] text-slate-400">Катастроф.</div>
+                  </div>
                 </div>
               </div>
             </div>
 
             {/* Легенда */}
-            <div className="mt-4 flex flex-wrap items-center gap-4 text-xs">
-              <div className="flex items-center gap-2">
-                <div className="h-4 w-4 rounded border border-green-500/40 bg-green-500/20"></div>
-                <span className="text-slate-400">Низкий риск (&lt; 10)</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="h-4 w-4 rounded border border-yellow-500/40 bg-yellow-500/20"></div>
-                <span className="text-slate-400">Средний риск (10-14)</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="h-4 w-4 rounded border border-red-500/40 bg-red-500/20"></div>
-                <span className="text-slate-400">Высокий риск (≥ 15)</span>
+            <div className="mt-6 rounded-lg bg-slate-800/50 p-4">
+              <div className="mb-2 text-sm font-semibold text-white">Уровни риска:</div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div className="flex items-center gap-3">
+                  <div className="h-8 w-8 rounded border border-emerald-500/60 bg-emerald-600/20 flex items-center justify-center">
+                    <span className="text-xs font-bold text-emerald-200">✓</span>
+                  </div>
+                  <div>
+                    <div className="text-sm font-semibold text-emerald-200">НИЗКИЙ (1-9)</div>
+                    <div className="text-xs text-slate-400">Допустимый риск, стандартный контроль</div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="h-8 w-8 rounded border-2 border-amber-500/60 bg-amber-600/30 flex items-center justify-center">
+                    <span className="text-xs font-bold text-amber-200">!</span>
+                  </div>
+                  <div>
+                    <div className="text-sm font-semibold text-amber-200">СРЕДНИЙ (10-14)</div>
+                    <div className="text-xs text-slate-400">Требует усиленного контроля</div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="h-8 w-8 rounded border-2 border-red-500/60 bg-red-600/30 flex items-center justify-center">
+                    <AlertTriangle className="h-4 w-4 text-red-200" />
+                  </div>
+                  <div>
+                    <div className="text-sm font-semibold text-red-200">ВЫСОКИЙ (15-25)</div>
+                    <div className="text-xs text-slate-400">Критично! Немедленные меры</div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
