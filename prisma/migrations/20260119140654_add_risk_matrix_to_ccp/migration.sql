@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE "CCP" ADD COLUMN     "probability" INTEGER NOT NULL DEFAULT 3,
+ADD COLUMN     "severity" INTEGER NOT NULL DEFAULT 3;

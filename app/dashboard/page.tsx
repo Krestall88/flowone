@@ -312,125 +312,135 @@ export default async function PlatformDashboardPage() {
         )}
 
         <div className="mb-8 grid w-full gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <Card className="border-slate-800 bg-slate-900/50 backdrop-blur-sm transition-colors hover:bg-slate-900/70">
-            <CardHeader className="space-y-1">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-sm font-semibold text-slate-200">Заполнение журналов</CardTitle>
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Info className="h-4 w-4 text-slate-500 cursor-help" />
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p className="max-w-xs">
-                        {journalsPercentToday === 0 ? "Нет записей за сегодня" : "Процент заполненных и подписанных записей"}
-                        {journalsPercentWeek === 0 && " / Нет записей за 7 дней"}
-                      </p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              </div>
-              <CardDescription className="text-xs text-slate-400">Сегодня / 7 дней</CardDescription>
-            </CardHeader>
-            <CardContent className="flex items-center justify-between">
-              <div className={`text-2xl font-bold ${journalsPercentToday === 0 ? "text-slate-500" : "text-white"}`}>
-                {journalsPercentToday}% / {journalsPercentWeek}%
-              </div>
-              <NotebookTabs className="h-5 w-5 text-slate-500" />
-            </CardContent>
-            </Card>
-
-          <Card className="border-slate-800 bg-slate-900/50 backdrop-blur-sm transition-colors hover:bg-slate-900/70">
-            <CardHeader className="space-y-1">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-sm font-semibold text-slate-200">Температуры сегодня</CardTitle>
-                {equipmentTotal === 0 && (
+          <Link href={`/journals/history?date=${isoToday}`}>
+            <Card className="border-slate-800 bg-slate-900/50 backdrop-blur-sm transition-all hover:bg-slate-900/70 hover:border-emerald-500/50 cursor-pointer">
+              <CardHeader className="space-y-1">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-sm font-semibold text-slate-200">Заполнение журналов</CardTitle>
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <Info className="h-4 w-4 text-slate-500 cursor-help" />
                       </TooltipTrigger>
                       <TooltipContent>
-                        <p>Нет оборудования для контроля температуры</p>
+                        <p className="max-w-xs">
+                          {journalsPercentToday === 0 ? "Нет записей за сегодня" : "Процент заполненных и подписанных записей"}
+                          {journalsPercentWeek === 0 && " / Нет записей за 7 дней"}
+                        </p>
                       </TooltipContent>
                     </Tooltip>
                   </TooltipProvider>
-                )}
-              </div>
-              <CardDescription className="text-xs text-slate-400">Всего / подписано</CardDescription>
-            </CardHeader>
-            <CardContent className="flex items-center justify-between">
-              <div className={`text-2xl font-bold ${equipmentTotal === 0 ? "text-slate-500" : "text-white"}`}>
-                {equipmentTotal === 0 ? "Нет точек" : `${temperatureTotalToday} / ${temperatureSignedToday}`}
-              </div>
-              <Thermometer className={`h-5 w-5 ${equipmentTotal === 0 ? "text-slate-600" : "text-slate-500"}`} />
-            </CardContent>
+                </div>
+                <CardDescription className="text-xs text-slate-400">Сегодня / 7 дней</CardDescription>
+              </CardHeader>
+              <CardContent className="flex items-center justify-between">
+                <div className={`text-2xl font-bold ${journalsPercentToday === 0 ? "text-slate-500" : "text-white"}`}>
+                  {journalsPercentToday}% / {journalsPercentWeek}%
+                </div>
+                <NotebookTabs className="h-5 w-5 text-slate-500" />
+              </CardContent>
             </Card>
+          </Link>
 
-          <Card className="border-slate-800 bg-slate-900/50 backdrop-blur-sm transition-colors hover:bg-slate-900/70">
-            <CardHeader className="space-y-1">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-sm font-semibold text-slate-200">Здоровье сегодня</CardTitle>
-                {employeesTotal === 0 && (
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Info className="h-4 w-4 text-slate-500 cursor-help" />
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>Нет активных сотрудников для контроля</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                )}
-              </div>
-              <CardDescription className="text-xs text-slate-400">Всего / подписано</CardDescription>
-            </CardHeader>
-            <CardContent className="flex items-center justify-between">
-              <div className={`text-2xl font-bold ${employeesTotal === 0 ? "text-slate-500" : "text-white"}`}>
-                {employeesTotal === 0 ? "Нет точек" : `${healthTotalToday} / ${healthSignedToday}`}
-              </div>
-              <Users className={`h-5 w-5 ${employeesTotal === 0 ? "text-slate-600" : "text-slate-500"}`} />
-            </CardContent>
+          <Link href={temperatureHref}>
+            <Card className="border-slate-800 bg-slate-900/50 backdrop-blur-sm transition-all hover:bg-slate-900/70 hover:border-emerald-500/50 cursor-pointer">
+              <CardHeader className="space-y-1">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-sm font-semibold text-slate-200">Температуры сегодня</CardTitle>
+                  {equipmentTotal === 0 && (
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Info className="h-4 w-4 text-slate-500 cursor-help" />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Нет оборудования для контроля температуры</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  )}
+                </div>
+                <CardDescription className="text-xs text-slate-400">Всего / подписано</CardDescription>
+              </CardHeader>
+              <CardContent className="flex items-center justify-between">
+                <div className={`text-2xl font-bold ${equipmentTotal === 0 ? "text-slate-500" : "text-white"}`}>
+                  {equipmentTotal === 0 ? "Нет точек" : `${temperatureTotalToday} / ${temperatureSignedToday}`}
+                </div>
+                <Thermometer className={`h-5 w-5 ${equipmentTotal === 0 ? "text-slate-600" : "text-slate-500"}`} />
+              </CardContent>
             </Card>
+          </Link>
 
-          <Card className={`border-slate-800 bg-slate-900/50 backdrop-blur-sm transition-colors hover:bg-slate-900/70 ${
+          <Link href={healthHref}>
+            <Card className="border-slate-800 bg-slate-900/50 backdrop-blur-sm transition-all hover:bg-slate-900/70 hover:border-emerald-500/50 cursor-pointer">
+              <CardHeader className="space-y-1">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-sm font-semibold text-slate-200">Здоровье сегодня</CardTitle>
+                  {employeesTotal === 0 && (
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Info className="h-4 w-4 text-slate-500 cursor-help" />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Нет активных сотрудников для контроля</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  )}
+                </div>
+                <CardDescription className="text-xs text-slate-400">Всего / подписано</CardDescription>
+              </CardHeader>
+              <CardContent className="flex items-center justify-between">
+                <div className={`text-2xl font-bold ${employeesTotal === 0 ? "text-slate-500" : "text-white"}`}>
+                  {employeesTotal === 0 ? "Нет точек" : `${healthTotalToday} / ${healthSignedToday}`}
+                </div>
+                <Users className={`h-5 w-5 ${employeesTotal === 0 ? "text-slate-600" : "text-slate-500"}`} />
+              </CardContent>
+            </Card>
+          </Link>
+
+          <Link href={registryHref}>
+            <Card className={`border-slate-800 bg-slate-900/50 backdrop-blur-sm transition-all hover:bg-slate-900/70 hover:border-emerald-500/50 cursor-pointer ${
               registryExpired > 0 ? "ring-2 ring-red-500/40" : registryExpiring > 0 ? "ring-2 ring-amber-500/30" : ""
             }`}>
-            <CardHeader className="space-y-1">
-              <CardTitle className="text-sm font-semibold text-slate-200">Документы для проверок</CardTitle>
-              <CardDescription className="text-xs text-slate-400">Просрочено / ≤ 30 дней</CardDescription>
-            </CardHeader>
-            <CardContent className="flex items-center justify-between">
-              <div className={`text-2xl font-bold ${
-                registryExpired > 0 ? "text-red-300" : registryExpiring > 0 ? "text-amber-300" : "text-white"
-              }`}>
-                {registryExpired} / {registryExpiring}
-              </div>
-              <FileText className={`h-5 w-5 ${
-                registryExpired > 0 ? "text-red-300" : registryExpiring > 0 ? "text-amber-300" : "text-slate-500"
-              }`} />
-            </CardContent>
+              <CardHeader className="space-y-1">
+                <CardTitle className="text-sm font-semibold text-slate-200">Документы для проверок</CardTitle>
+                <CardDescription className="text-xs text-slate-400">Просрочено / ≤ 30 дней</CardDescription>
+              </CardHeader>
+              <CardContent className="flex items-center justify-between">
+                <div className={`text-2xl font-bold ${
+                  registryExpired > 0 ? "text-red-300" : registryExpiring > 0 ? "text-amber-300" : "text-white"
+                }`}>
+                  {registryExpired} / {registryExpiring}
+                </div>
+                <FileText className={`h-5 w-5 ${
+                  registryExpired > 0 ? "text-red-300" : registryExpiring > 0 ? "text-amber-300" : "text-slate-500"
+                }`} />
+              </CardContent>
             </Card>
+          </Link>
         </div>
 
         <div className="mb-8 grid w-full gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <Card
-              className={`border-slate-800 bg-slate-900/50 backdrop-blur-sm transition-colors hover:bg-slate-900/70 ${
-                criticalTotalToday > 0 ? "ring-2 ring-red-500/40" : ""
-              }`}
-            >
-            <CardHeader className="space-y-1">
-              <CardTitle className="text-sm font-semibold text-slate-200">Критические отклонения</CardTitle>
-              <CardDescription className="text-xs text-slate-400">Сегодня (красным)</CardDescription>
-            </CardHeader>
-            <CardContent className="flex items-center justify-between">
-              <div className={`text-2xl font-bold ${criticalTotalToday > 0 ? "text-red-300" : "text-white"}`}>
-                {criticalTotalToday}
-              </div>
-              <AlertTriangle className={`h-5 w-5 ${criticalTotalToday > 0 ? "text-red-300" : "text-slate-500"}`} />
-            </CardContent>
+          <Link href={criticalHref}>
+            <Card
+                className={`border-slate-800 bg-slate-900/50 backdrop-blur-sm transition-all hover:bg-slate-900/70 hover:border-emerald-500/50 cursor-pointer ${
+                  criticalTotalToday > 0 ? "ring-2 ring-red-500/40" : ""
+                }`}
+              >
+              <CardHeader className="space-y-1">
+                <CardTitle className="text-sm font-semibold text-slate-200">Критические отклонения</CardTitle>
+                <CardDescription className="text-xs text-slate-400">Сегодня (красным)</CardDescription>
+              </CardHeader>
+              <CardContent className="flex items-center justify-between">
+                <div className={`text-2xl font-bold ${criticalTotalToday > 0 ? "text-red-300" : "text-white"}`}>
+                  {criticalTotalToday}
+                </div>
+                <AlertTriangle className={`h-5 w-5 ${criticalTotalToday > 0 ? "text-red-300" : "text-slate-500"}`} />
+              </CardContent>
             </Card>
+          </Link>
 
           <Card
               className={`border-slate-800 bg-slate-900/50 backdrop-blur-sm transition-colors hover:bg-slate-900/70 ${
@@ -456,30 +466,34 @@ export default async function PlatformDashboardPage() {
             </CardContent>
             </Card>
 
-          <Card
-              className={`border-slate-800 bg-slate-900/50 backdrop-blur-sm transition-colors hover:bg-slate-900/70 ${
-                (highRiskCCPCount || 0) > 0 ? "ring-2 ring-red-500/40" : ""
-              }`}
-            >
-            <CardHeader className="space-y-1">
-              <CardTitle className="text-sm font-semibold text-slate-200">Открытые риски</CardTitle>
-              <CardDescription className="text-xs text-slate-400">High-risk CCP</CardDescription>
-            </CardHeader>
-            <CardContent className="flex items-center justify-between">
-              <div className={`text-2xl font-bold ${(highRiskCCPCount || 0) > 0 ? "text-red-300" : "text-white"}`}>
-                {highRiskCCPCount || 0}
-              </div>
-              <Shield className={`h-5 w-5 ${(highRiskCCPCount || 0) > 0 ? "text-red-300" : "text-slate-500"}`} />
-            </CardContent>
+          <Link href="/haccp-plan?riskLevel=high&status=active">
+            <Card
+                className={`border-slate-800 bg-slate-900/50 backdrop-blur-sm transition-all hover:bg-slate-900/70 hover:border-emerald-500/50 cursor-pointer ${
+                  (highRiskCCPCount || 0) > 0 ? "ring-2 ring-red-500/40" : ""
+                }`}
+              >
+              <CardHeader className="space-y-1">
+                <CardTitle className="text-sm font-semibold text-slate-200">Открытые риски</CardTitle>
+                <CardDescription className="text-xs text-slate-400">High-risk CCP</CardDescription>
+              </CardHeader>
+              <CardContent className="flex items-center justify-between">
+                <div className={`text-2xl font-bold ${(highRiskCCPCount || 0) > 0 ? "text-red-300" : "text-white"}`}>
+                  {highRiskCCPCount || 0}
+                </div>
+                <Shield className={`h-5 w-5 ${(highRiskCCPCount || 0) > 0 ? "text-red-300" : "text-slate-500"}`} />
+              </CardContent>
             </Card>
+          </Link>
 
-          <Card className="border-slate-800 bg-slate-900/50 backdrop-blur-sm transition-colors hover:bg-slate-900/70">
-            <CardHeader className="space-y-1">
-              <CardTitle className="text-sm font-semibold text-slate-200">Задачи</CardTitle>
-              <CardDescription className="text-xs text-slate-400">Ожидают действия</CardDescription>
-            </CardHeader>
-            <CardContent className="text-2xl font-bold text-white">{pendingTasks}</CardContent>
+          <Link href={tasksHref}>
+            <Card className="border-slate-800 bg-slate-900/50 backdrop-blur-sm transition-all hover:bg-slate-900/70 hover:border-emerald-500/50 cursor-pointer">
+              <CardHeader className="space-y-1">
+                <CardTitle className="text-sm font-semibold text-slate-200">Задачи</CardTitle>
+                <CardDescription className="text-xs text-slate-400">Ожидают действия</CardDescription>
+              </CardHeader>
+              <CardContent className="text-2xl font-bold text-white">{pendingTasks}</CardContent>
             </Card>
+          </Link>
 
           <Card className="border-slate-800 bg-slate-900/50 backdrop-blur-sm">
             <CardHeader className="space-y-1">

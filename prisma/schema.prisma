@@ -264,7 +264,11 @@ model CCP {
   process               String
   /// Описание опасности (биологическая, химическая, физическая)
   hazard                String
-  /// Уровень риска: low, medium, high
+  /// Тяжесть последствий: 1-5 (1=незначительная, 5=катастрофическая)
+  severity              Int       @default(3)
+  /// Вероятность возникновения: 1-5 (1=редко, 5=очень часто)
+  probability           Int       @default(3)
+  /// Уровень риска: low, medium, high (рассчитывается автоматически: severity * probability)
   riskLevel             String    @default("medium")
   /// Меры контроля (что делаем для предотвращения)
   controlMeasures       String

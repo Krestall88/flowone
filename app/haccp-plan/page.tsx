@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { AppSidebar } from "@/components/layout/app-sidebar";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { CCPTable } from "@/components/haccp/ccp-table";
+import { RiskMatrix } from "@/components/haccp/risk-matrix";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { PlusCircle, Download } from "lucide-react";
@@ -34,7 +35,23 @@ export default async function HACCPPlanPage({
           ],
         } : {}),
       },
-      include: {
+      select: {
+        id: true,
+        process: true,
+        hazard: true,
+        severity: true,
+        probability: true,
+        riskLevel: true,
+        controlMeasures: true,
+        correctiveActions: true,
+        criticalLimits: true,
+        monitoringProcedure: true,
+        responsiblePerson: true,
+        status: true,
+        createdAt: true,
+        updatedAt: true,
+        relatedDocumentId: true,
+        relatedNonconformityId: true,
         relatedDocument: {
           select: { id: true, title: true },
         },
@@ -208,6 +225,17 @@ export default async function HACCPPlanPage({
                 Поиск
               </Button>
             </form>
+          </div>
+
+          {/* Матрица рисков */}
+          <div className="mb-6">
+            <RiskMatrix ccps={ccps.map(ccp => ({
+              id: ccp.id,
+              process: ccp.process,
+              severity: ccp.severity,
+              probability: ccp.probability,
+              riskLevel: ccp.riskLevel,
+            }))} />
           </div>
 
           {/* Таблица CCP */}
