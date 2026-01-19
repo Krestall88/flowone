@@ -17,6 +17,8 @@ async function main() {
 
   // Очистка данных
   console.log("🗑️  Очистка существующих данных...");
+  await (prisma as any).masterDataItem.deleteMany();
+  await (prisma as any).masterDataCategory.deleteMany();
   await prisma.healthCheckEmployee.deleteMany();
   await prisma.healthCheck.deleteMany();
   await prisma.temperatureEntry.deleteMany();
@@ -832,16 +834,209 @@ async function main() {
   });
   console.log(`   ✅ Создано ${5} уведомлений`);
 
-  // ========== ИТОГОВАЯ СТАТИСТИКА ==========
-  console.log("\n" + "=".repeat(60));
+  // ========== КАТЕГОРИИ СПРАВОЧНИКОВ ==========
+  console.log("\n📚 Создание категорий справочников...");
+  
+  const categories = await Promise.all([
+    (prisma as any).masterDataCategory.create({
+      data: {
+        name: "Сертификаты на сырьё",
+        type: "certificate",
+        description: "Сертификаты качества на сырьё и ингредиенты",
+        color: "#10b981",
+        icon: "FileCheck",
+        sortOrder: 1,
+        active: true,
+      },
+    }),
+    (prisma as any).masterDataCategory.create({
+      data: {
+        name: "Сертификаты на химию",
+        type: "certificate",
+        description: "Сертификаты на моющие и дезинфицирующие средства",
+        color: "#3b82f6",
+        icon: "Droplet",
+        sortOrder: 2,
+        active: true,
+      },
+    }),
+    (prisma as any).masterDataCategory.create({
+      data: {
+        name: "Медицинские книжки",
+        type: "certificate",
+        description: "Медицинские книжки сотрудников",
+        color: "#ef4444",
+        icon: "Heart",
+        sortOrder: 3,
+        active: true,
+      },
+    }),
+    (prisma as any).masterDataCategory.create({
+      data: {
+        name: "Поставщики",
+        type: "supplier",
+        description: "Список проверенных поставщиков",
+        color: "#f59e0b",
+        icon: "Truck",
+        sortOrder: 4,
+        active: true,
+      },
+    }),
+  ]);
+
+  console.log(`   ✅ Создано ${categories.length} категорий`);
+
+  // ========== ЭЛЕМЕНТЫ СПРАВОЧНИКОВ ==========
+  console.log("\n📋 Создание элементов справочников...");
+
+  const items = await Promise.all([
+    // Сертификаты на сырьё
+    (prisma as any).masterDataItem.create({
+      data: {
+        categoryId: categories[0].id,
+        name: "Мука пшеничная высший сорт",
+        description: "Сертификат качества на муку от ООО 'Мельник'",
+        supplier: "ООО 'Мельник'",
+        expiresAt: daysFromNow(45),
+        active: true,
+        metadata: {
+          batchNumber: "МП-2024-001",
+          certificateNumber: "СК-12345",
+        },
+      },
+    }),
+    (prisma as any).masterDataItem.create({
+      data: {
+        categoryId: categories[0].id,
+        name: "Молоко пастеризованное 3.2%",
+        description: "Сертификат качества на молоко от ООО 'Молочный завод'",
+        supplier: "ООО 'Молочный завод'",
+        expiresAt: daysAgo(5),
+        active: true,
+        metadata: {
+          batchNumber: "МЛ-2024-089",
+          certificateNumber: "СК-67890",
+        },
+      },
+    }),
+    (prisma as any).masterDataItem.create({
+      data: {
+        categoryId: categories[0].id,
+        name: "Сахар-песок",
+        description: "Сертификат качества на сахар от ООО 'Сладкий мир'",
+        supplier: "ООО 'Сладкий мир'",
+        expiresAt: daysFromNow(120),
+        active: true,
+        metadata: {
+          batchNumber: "СХ-2024-034",
+          certificateNumber: "СК-11223",
+        },
+      },
+    }),
+    // Сертификаты на химию
+    (prisma as any).masterDataItem.create({
+      data: {
+        categoryId: categories[1].id,
+        name: "Моющее средство 'Чистодез'",
+        description: "Сертификат на моющее средство для пищевого производства",
+        supplier: "ООО 'ХимПром'",
+        expiresAt: daysFromNow(90),
+        active: true,
+        metadata: {
+          certificateNumber: "ХМ-45678",
+          concentration: "5%",
+        },
+      },
+    }),
+    (prisma as any).masterDataItem.create({
+      data: {
+        categoryId: categories[1].id,
+        name: "Дезинфицирующее средство 'Санитар'",
+        description: "Сертификат на дезсредство для обработки поверхностей",
+        supplier: "ООО 'Санитария'",
+        expiresAt: daysFromNow(20),
+        active: true,
+        metadata: {
+          certificateNumber: "ДЗ-98765",
+          concentration: "3%",
+        },
+      },
+    }),
+    // Медицинские книжки
+    (prisma as any).masterDataItem.create({
+      data: {
+        categoryId: categories[2].id,
+        name: "Медкнижка - Петров И.С. (пекарь)",
+        description: "Медицинская книжка пекаря Петрова Ивана Сергеевича",
+        expiresAt: daysFromNow(180),
+        active: true,
+        metadata: {
+          employeeName: "Петров Иван Сергеевич",
+          position: "Пекарь",
+          medBookNumber: "МК-123456",
+        },
+      },
+    }),
+    (prisma as any).masterDataItem.create({
+      data: {
+        categoryId: categories[2].id,
+        name: "Медкнижка - Сидорова А.В. (кондитер)",
+        description: "Медицинская книжка кондитера Сидоровой Анны Владимировны",
+        expiresAt: daysAgo(10),
+        active: true,
+        metadata: {
+          employeeName: "Сидорова Анна Владимировна",
+          position: "Кондитер",
+          medBookNumber: "МК-789012",
+        },
+      },
+    }),
+    // Поставщики
+    (prisma as any).masterDataItem.create({
+      data: {
+        categoryId: categories[3].id,
+        name: "ООО 'Мельник'",
+        description: "Поставщик муки и зерновых продуктов",
+        supplier: "ООО 'Мельник'",
+        active: true,
+        metadata: {
+          inn: "7701234567",
+          address: "г. Москва, ул. Мельничная, д. 10",
+          phone: "+7 (495) 123-45-67",
+          contactPerson: "Иванов Петр",
+        },
+      },
+    }),
+    (prisma as any).masterDataItem.create({
+      data: {
+        categoryId: categories[3].id,
+        name: "ООО 'Молочный завод'",
+        description: "Поставщик молочной продукции",
+        supplier: "ООО 'Молочный завод'",
+        active: true,
+        metadata: {
+          inn: "7702345678",
+          address: "г. Москва, ул. Молочная, д. 5",
+          phone: "+7 (495) 234-56-78",
+          contactPerson: "Смирнова Елена",
+        },
+      },
+    }),
+  ]);
+
+  console.log(`   ✅ Создано ${items.length} элементов справочников`);
+
+  // ========== ФИНАЛЬНАЯ СТАТИСТИКА ==========
+  console.log("\n============================================================");
   console.log("✅ ТЕСТОВЫЕ ДАННЫЕ ДЛЯ ПЕКАРНИ 'ХЛЕБНЫЙ ДОМ' СОЗДАНЫ!");
-  console.log("=".repeat(60));
+  console.log("============================================================");
+  
   console.log("\n📊 Статистика:");
   console.log(`   👥 Пользователей: 6`);
   console.log(`   📍 Локаций: 5`);
-  console.log(`   🔧 Оборудования: ${equipment.length}`);
-  console.log(`   👨‍🍳 Сотрудников: ${employeesList.length}`);
-  console.log(`   🌡️  Записей температур: ${fridges.length * 7}`);
+  console.log(`   🔧 Оборудования: 11`);
+  console.log(`   👨‍🍳 Сотрудников: 9`);
+  console.log(`   🌡️  Записей температур: 56`);
   console.log(`   🏥 Записей здоровья: 7`);
   console.log(`   📄 Документов: ${4 + certDocs.length}`);
   console.log(`   📋 Записей реестра: 11`);
@@ -850,6 +1045,8 @@ async function main() {
   console.log(`   📝 Действий по CCP: 13`);
   console.log(`   🔬 Лабораторных исследований: 6`);
   console.log(`   🔔 Уведомлений: 5`);
+  console.log(`   📚 Категорий справочников: ${categories.length}`);
+  console.log(`   📋 Элементов справочников: ${items.length}`);
   
   console.log("\n🔑 Учётные данные для входа:");
   console.log("   📧 Email: director@bakery.com (или любой другой)");
@@ -867,6 +1064,7 @@ async function main() {
   console.log("   ✅ Dashboard с метриками");
   console.log("   ✅ Audit Checklist");
   console.log("   ✅ Пакет аудитора");
+  console.log("   ✅ Справочники с категориями");
   console.log("\n🎉 Готово к тестированию!\n");
 }
 

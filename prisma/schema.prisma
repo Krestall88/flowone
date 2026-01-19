@@ -361,3 +361,52 @@ model Notification {
   createdAt   DateTime  @default(now())
   expiresAt   DateTime? // Автоудаление старых уведомлений
 }
+
+/// Категории справочников (для сертификатов, оборудования и т.д.)
+model MasterDataCategory {
+  id          Int       @id @default(autoincrement())
+  /// Название категории (например, "Сертификаты на химию", "Сертификаты на сырьё")
+  name        String
+  /// Тип категории: certificate, equipment, supplier, other
+  type        String    @default("certificate")
+  /// Описание категории
+  description String?
+  /// Цвет для UI (hex)
+  color       String?
+  /// Иконка (название из lucide-react)
+  icon        String?
+  /// Порядок сортировки
+  sortOrder   Int       @default(0)
+  /// Активна ли категория
+  active      Boolean   @default(true)
+  /// Элементы справочника
+  items       MasterDataItem[]
+  
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+/// Элементы справочников (сертификаты, оборудование и т.д.)
+model MasterDataItem {
+  id          Int       @id @default(autoincrement())
+  /// Категория
+  categoryId  Int
+  category    MasterDataCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  /// Название элемента (например, "Сертификат на моющее средство 'Чистодез'")
+  name        String
+  /// Описание
+  description String?
+  /// Дополнительные поля (JSON)
+  metadata    Json?
+  /// Связь с документом (если есть)
+  documentId  Int?
+  /// Срок действия (для сертификатов)
+  expiresAt   DateTime?
+  /// Поставщик/производитель
+  supplier    String?
+  /// Активен ли элемент
+  active      Boolean   @default(true)
+  
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
