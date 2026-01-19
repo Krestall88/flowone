@@ -7,6 +7,8 @@ import { AppSidebar } from "@/components/layout/app-sidebar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Breadcrumb } from "@/components/ui/breadcrumb";
+import { InfoTooltip } from "@/components/ui/info-tooltip";
 
 export const dynamic = 'force-dynamic';
 
@@ -165,7 +167,27 @@ export default async function RegistryPage({
         <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:py-12">
           <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
             <div>
-              <h1 className="text-2xl font-bold text-white">Документы для проверок</h1>
+              <div className="flex items-center gap-2">
+                <h1 className="text-2xl font-bold text-white">Документы для проверок</h1>
+                <InfoTooltip
+                  content={
+                    <div className="space-y-2">
+                      <p className="font-semibold">Полный реестр всех документов системы</p>
+                      <p className="text-xs">Управление сертификатами и разрешениями. Включает:</p>
+                      <ul className="text-xs space-y-1 list-disc list-inside">
+                        <li>Все документы (сертификаты, медкнижки)</li>
+                        <li>Фильтры по типу и статусу</li>
+                        <li>Поиск по поставщикам и зонам</li>
+                        <li>Отслеживание сроков действия</li>
+                        <li>Добавление новых документов</li>
+                      </ul>
+                      <p className="text-xs text-slate-300 mt-2">
+                        <strong>Отличие от Пакета:</strong> Реестр — полная база для работы, Пакет — выборка критичных документов для аудитора.
+                      </p>
+                    </div>
+                  }
+                />
+              </div>
               <p className="mt-1 text-sm text-slate-400">Сертификаты, разрешения и критичные документы ХАССП — быстрый поиск за 5–10 секунд.</p>
             </div>
             <div className="flex flex-wrap items-center gap-3">

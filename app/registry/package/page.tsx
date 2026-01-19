@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { RegistryPackageActions } from "@/components/registry/registry-package-actions";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
+import { InfoTooltip } from "@/components/ui/info-tooltip";
 
 export const dynamic = 'force-dynamic';
 
@@ -141,7 +142,27 @@ export default async function RegistryPackagePage({
           <Breadcrumb items={[{ label: "Реестр", href: "/registry" }, { label: "Пакет для проверки" }]} />
           <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between print:hidden">
             <div>
-              <h1 className="text-2xl font-bold text-white">Пакет документов для проверки</h1>
+              <div className="flex items-center gap-2">
+                <h1 className="text-2xl font-bold text-white">Пакет документов для проверки</h1>
+                <InfoTooltip
+                  content={
+                    <div className="space-y-2">
+                      <p className="font-semibold">Автоматическая выборка критичных документов</p>
+                      <p className="text-xs">Готовый пакет для передачи аудитору. Включает:</p>
+                      <ul className="text-xs space-y-1 list-disc list-inside">
+                        <li>Просроченные документы</li>
+                        <li>Истекающие ≤ 30 дней</li>
+                        <li>Фильтрация по типам</li>
+                        <li>Экспорт в Excel</li>
+                        <li>Печать пакета</li>
+                      </ul>
+                      <p className="text-xs text-slate-300 mt-2">
+                        <strong>Отличие от Реестра:</strong> Пакет — автоматическая выборка проблемных документов, Реестр — полная база всех документов.
+                      </p>
+                    </div>
+                  }
+                />
+              </div>
               <p className="mt-1 text-sm text-slate-400">Автосбор для аудитора: просрочено и ≤ 30 дней (по умолчанию).</p>
             </div>
             <div className="flex flex-wrap items-center gap-3">

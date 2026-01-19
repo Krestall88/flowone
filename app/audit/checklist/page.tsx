@@ -7,6 +7,7 @@ import { formatDateISO, getDayRangeUTC, todayUTC } from "@/lib/date-utils";
 import { AppSidebar } from "@/components/layout/app-sidebar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
+import { InfoTooltip } from "@/components/ui/info-tooltip";
 
 export default async function AuditChecklistPage() {
   const user = await requireUser();
@@ -134,7 +135,27 @@ export default async function AuditChecklistPage() {
         <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:py-12">
           <Breadcrumb items={[{ label: "Audit Checklist" }]} />
           <div className="mb-6">
-            <h1 className="text-2xl font-bold text-white">Audit Checklist</h1>
+            <div className="flex items-center gap-2">
+              <h1 className="text-2xl font-bold text-white">Audit Checklist</h1>
+              <InfoTooltip
+                content={
+                  <div className="space-y-2">
+                    <p className="font-semibold">Быстрая проверка готовности системы</p>
+                    <p className="text-xs">Для самопроверки перед аудитом. Показывает:</p>
+                    <ul className="text-xs space-y-1 list-disc list-inside">
+                      <li>% заполнения журналов</li>
+                      <li>Критические отклонения</li>
+                      <li>Просроченные документы</li>
+                      <li>Открытые несоответствия</li>
+                      <li>Высокие риски (CCP)</li>
+                    </ul>
+                    <p className="text-xs text-slate-300 mt-2">
+                      <strong>Отличие от Пакета аудитора:</strong> Checklist — для внутренней проверки, Пакет — для передачи аудитору.
+                    </p>
+                  </div>
+                }
+              />
+            </div>
             <p className="mt-1 text-sm text-slate-400">
               Режим проверки: {activeAuditSession ? `активен (${activeAuditSession.auditType})` : "не активен"}
             </p>

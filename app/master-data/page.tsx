@@ -4,6 +4,7 @@ import { getInboxCount } from "@/lib/inbox-count";
 import { AppSidebar } from "@/components/layout/app-sidebar";
 import { MasterDataManager } from "@/components/master-data/master-data-manager";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
+import { InfoTooltip } from "@/components/ui/info-tooltip";
 
 export default async function MasterDataPage() {
   const user = await requireUser();
@@ -32,9 +33,27 @@ export default async function MasterDataPage() {
         <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:py-12">
           <Breadcrumb items={[{ label: "Справочники" }]} />
           <div className="mb-6 space-y-2">
-            <h1 className="bg-gradient-to-r from-white via-emerald-100 to-cyan-100 bg-clip-text text-2xl font-bold text-transparent sm:text-3xl">
-              Справочники
-            </h1>
+            <div className="flex items-center gap-2">
+              <h1 className="bg-gradient-to-r from-white via-emerald-100 to-cyan-100 bg-clip-text text-2xl font-bold text-transparent sm:text-3xl">
+                Справочники
+              </h1>
+              <InfoTooltip
+                content={
+                  <div className="space-y-2">
+                    <p className="font-semibold">Базовые данные системы</p>
+                    <p className="text-xs">Управление основными справочниками:</p>
+                    <ul className="text-xs space-y-1 list-disc list-inside">
+                      <li>Сотрудники (имя, должность, статус)</li>
+                      <li>Локации (цеха, склады, зоны)</li>
+                      <li>Оборудование (холодильники, печи)</li>
+                    </ul>
+                    <p className="text-xs text-slate-300 mt-2">
+                      <strong>Примечание:</strong> Сертификаты хранятся в Реестре документов (/registry), а не здесь. В будущем планируется добавить управление категориями сертификатов.
+                    </p>
+                  </div>
+                }
+              />
+            </div>
             <p className="max-w-3xl text-sm text-slate-300 sm:text-base">
               Единый экран для управления сотрудниками, помещениями и оборудованием.
             </p>

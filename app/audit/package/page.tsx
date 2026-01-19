@@ -8,6 +8,7 @@ import { AppSidebar } from "@/components/layout/app-sidebar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
+import { InfoTooltip } from "@/components/ui/info-tooltip";
 
 function getExpiryStatus(expiresAt: Date | null): "active" | "expiring" | "expired" | "no_expiry" {
   if (!expiresAt) return "no_expiry";
@@ -151,7 +152,27 @@ export default async function AuditPackagePage({
         <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:py-12">
           <Breadcrumb items={[{ label: "Audit Checklist", href: "/audit/checklist" }, { label: "Пакет аудитора" }]} />
           <div className="mb-6">
-            <h1 className="text-2xl font-bold text-white">Пакет аудитора</h1>
+            <div className="flex items-center gap-2">
+              <h1 className="text-2xl font-bold text-white">Пакет аудитора</h1>
+              <InfoTooltip
+                content={
+                  <div className="space-y-2">
+                    <p className="font-semibold">Готовый пакет документов для аудитора</p>
+                    <p className="text-xs">Для передачи проверяющим. Включает:</p>
+                    <ul className="text-xs space-y-1 list-disc list-inside">
+                      <li>Документы, требующие внимания</li>
+                      <li>Фильтрация и поиск</li>
+                      <li>Открытые несоответствия</li>
+                      <li>История действий (Audit Log)</li>
+                      <li>PDF экспорт журналов</li>
+                    </ul>
+                    <p className="text-xs text-slate-300 mt-2">
+                      <strong>Отличие от Checklist:</strong> Пакет — упрощённая таблица для аудитора, Checklist — детальные метрики для самопроверки.
+                    </p>
+                  </div>
+                }
+              />
+            </div>
             <p className="mt-1 text-sm text-slate-400">
               {activeAuditSession
                 ? `Проверка активна (${activeAuditSession.auditType}). Пакет собирается по актуальным данным.`
