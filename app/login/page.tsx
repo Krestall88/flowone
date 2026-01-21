@@ -13,11 +13,11 @@ import { redirect } from "next/navigation";
 import { BadgeCheck, Shield, Workflow, Zap, Lock, ClipboardCheck, NotebookTabs } from "lucide-react";
 
 const sampleUsers = [
-  { role: "Директор", email: "director@example.com" },
-  { role: "Рук. производства", email: "head@example.com" },
-  { role: "Технолог", email: "technologist@example.com" },
-  { role: "Аудитор", email: "auditor@example.com" },
-  { role: "Сотрудник", email: "employee@example.com" },
+  { role: "Директор", email: "director@bakery.com" },
+  { role: "Рук. производства", email: "manager@bakery.com" },
+  { role: "Технолог", email: "tech@bakery.com" },
+  { role: "Администратор журналов", email: "journals@bakery.com" },
+  { role: "Сотрудник", email: "employee@bakery.com" },
 ];
 
 export default async function LoginPage() {
