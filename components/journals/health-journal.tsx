@@ -3,7 +3,7 @@
 import { useEffect, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { isSameDay, parseISO, startOfToday } from "date-fns";
+import { parseISO } from "date-fns";
 import { CheckCircle2, Edit2, Plus, User } from "lucide-react";
 
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
@@ -170,7 +170,7 @@ export function HealthJournal({ employees, date, initialStatuses, initialNotes, 
   }, [date]);
 
   const selectedDate = parseISO(date);
-  const isToday = isSameDay(selectedDate, startOfToday());
+  const isToday = date === new Date().toISOString().slice(0, 10);
   const isReadOnly = !isToday;
 
   const handleStatusChange = (id: number, status: Status) => {

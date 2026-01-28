@@ -13,7 +13,6 @@ export function PdfExportButton({ href }: { href: string }) {
         method: "GET",
         credentials: "include",
         cache: "no-store",
-        redirect: "manual",
       });
 
       if (!res.ok) {
@@ -21,13 +20,9 @@ export function PdfExportButton({ href }: { href: string }) {
         throw new Error(text || `HTTP ${res.status}`);
       }
 
-      if (res.type === "opaqueredirect" || res.redirected) {
-        throw new Error("Unauthorized");
-      }
-
       const contentType = res.headers.get("content-type") ?? "";
       if (!contentType.includes("application/pdf")) {
-        throw new Error("Unexpected response");
+        throw new Error("Не удалось получить PDF (возможно, нужна повторная авторизация)");
       }
 
       const blob = await res.blob();

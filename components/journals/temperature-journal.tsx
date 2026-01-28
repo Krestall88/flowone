@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState, useTransition } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useRouter } from "next/navigation";
-import { format, isSameDay, parseISO, startOfToday } from "date-fns";
+import { format, parseISO } from "date-fns";
 import { ru } from "date-fns/locale";
 import { ThermometerSun, CheckCircle2, Plus, ChevronDown } from "lucide-react";
 
@@ -135,7 +135,7 @@ export function TemperatureJournal({ userName, locations, entries, date, signedL
   const selectedDate = parseISO(date);
   const dateLabel = format(selectedDate, "d MMMM yyyy", { locale: ru });
 
-  const isToday = isSameDay(selectedDate, startOfToday());
+  const isToday = date === new Date().toISOString().slice(0, 10);
   const isReadOnly = !isToday;
 
   const deviations = useMemo(() => {
