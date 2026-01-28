@@ -6,6 +6,8 @@ import { requireUser } from "@/lib/session";
 import { canManageAuditMode, getActiveAuditSession } from "@/lib/audit-session";
 import { logAudit } from "@/lib/audit-log";
 
+ export const dynamic = "force-dynamic";
+
 const startSchema = z.object({
   auditType: z.enum(["HACCP", "SanPiN", "Internal", "Certification"]),
   auditorName: z.string().optional(),
