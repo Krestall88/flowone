@@ -21,7 +21,7 @@ export function PdfExportButton({ href }: { href: string }) {
         throw new Error(text || `HTTP ${res.status}`);
       }
 
-      if ((res as any).type === "opaqueredirect") {
+      if (res.type === "opaqueredirect" || res.redirected) {
         throw new Error("Unauthorized");
       }
 

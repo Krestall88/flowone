@@ -8,7 +8,6 @@ import { format, isSameDay, parseISO, startOfToday } from "date-fns";
 import { ru } from "date-fns/locale";
 import { ThermometerSun, CheckCircle2, Plus, ChevronDown } from "lucide-react";
 
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { offlineDB } from "@/lib/offline-db";
@@ -94,15 +93,28 @@ export function TemperatureJournal({ userName, locations, entries, date, signedL
       try {
         const pending = await offlineDB.getPendingEntries();
         const candidate = pending
-          .filter((e) => e.type === "temperature" && e.data?.date === date)
+          .filter((e) => {
+            const data = e.data as { date?: unknown };
+            return e.type === "temperature" && data?.date === date;
+          })
           .sort((a, b) => b.timestamp - a.timestamp)[0];
 
         if (!candidate || cancelled) return;
 
-        const pendingEntries = Array.isArray(candidate.data?.entries) ? candidate.data.entries : [];
+        const data = candidate.data as { entries?: unknown };
+        const pendingEntries = Array.isArray(data?.entries) ? (data.entries as unknown[]) : [];
         setValues((prev) =>
           prev.map((row) => {
-            const match = pendingEntries.find((p: any) => Number(p?.equipmentId) === row.id);
+            const match = pendingEntries.find((p) => {
+              const obj = p as { equipmentId?: unknown };
+              return Number(obj?.equipmentId) === row.id;
+            }) as
+              | {
+                  morning?: number | null;
+                  day?: number | null;
+                  evening?: number | null;
+                }
+              | undefined;
             if (!match) return row;
             return {
               ...row,

@@ -6,7 +6,7 @@
 interface OfflineEntry {
   id: string;
   type: 'temperature' | 'health';
-  data: any;
+  data: unknown;
   timestamp: number;
   synced: boolean;
   retryCount: number;
@@ -42,7 +42,7 @@ class OfflineDB {
     });
   }
 
-  async addEntry(type: 'temperature' | 'health', data: any): Promise<string> {
+  async addEntry(type: 'temperature' | 'health', data: unknown): Promise<string> {
     if (!this.db) await this.init();
 
     const entry: OfflineEntry = {

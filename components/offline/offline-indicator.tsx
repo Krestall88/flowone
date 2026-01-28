@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from 'react';
-import { WifiOff, Wifi, RefreshCw, CheckCircle, AlertCircle } from 'lucide-react';
+import { WifiOff, RefreshCw, CheckCircle, AlertCircle } from 'lucide-react';
 import { offlineSyncManager } from '@/lib/offline-sync';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';

@@ -128,19 +128,33 @@ export function HealthJournal({ employees, date, initialStatuses, initialNotes, 
       try {
         const pending = await offlineDB.getPendingEntries();
         const candidate = pending
-          .filter((e) => e.type === "health" && e.data?.date === date)
+          .filter((e) => {
+            const data = e.data as { date?: unknown };
+            return e.type === "health" && data?.date === date;
+          })
           .sort((a, b) => b.timestamp - a.timestamp)[0];
 
         if (!candidate || cancelled) return;
 
-        const pendingEntries = Array.isArray(candidate.data?.entries) ? candidate.data.entries : [];
-        const nextStatuses: Record<number, any> = {};
+        const data = candidate.data as { entries?: unknown };
+        const pendingEntries = Array.isArray(data?.entries) ? (data.entries as unknown[]) : [];
+        const nextStatuses: Record<number, Status> = {};
         const nextNotes: Record<number, string> = {};
 
-        for (const entry of pendingEntries) {
+        for (const raw of pendingEntries) {
+          const entry = raw as { employeeId?: unknown; status?: unknown; note?: unknown };
           const employeeId = Number(entry?.employeeId);
           if (!employeeId || Number.isNaN(employeeId)) continue;
-          if (entry?.status) nextStatuses[employeeId] = entry.status;
+          if (
+            entry?.status === "healthy" ||
+            entry?.status === "sick" ||
+            entry?.status === "vacation" ||
+            entry?.status === "day_off" ||
+            entry?.status === "sick_leave" ||
+            entry?.status === null
+          ) {
+            nextStatuses[employeeId] = entry.status;
+          }
           if (typeof entry?.note === "string" && entry.note.trim()) nextNotes[employeeId] = entry.note;
         }
 

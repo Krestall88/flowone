@@ -134,7 +134,7 @@ class OfflineSyncManager {
       body: JSON.stringify(entry.data),
     });
 
-    if ((response as any).type === 'opaqueredirect' || response.redirected) {
+    if (response.type === 'opaqueredirect' || response.redirected) {
       throw new Error('Unauthorized: redirected');
     }
 
