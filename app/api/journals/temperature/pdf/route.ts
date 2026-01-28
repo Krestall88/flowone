@@ -8,10 +8,14 @@ import { renderTemperatureJournalPdf, MONTHS_RU, type EquipmentRow } from "./ren
  export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest) {
-  await requireUser();
+  try {
+    const user = await requireUser();
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
 
-  const url = new URL(req.url);
-  const dateParam = url.searchParams.get("date");
+    const url = new URL(req.url);
+    const dateParam = url.searchParams.get("date");
 
   // Определяем месяц по переданной дате (или текущий)
   let selectedDate = new Date();
@@ -93,4 +97,11 @@ export async function GET(req: NextRequest) {
       "Cache-Control": "no-store",
     },
   });
+  } catch (error) {
+    console.error("[PDF] Temperature journal PDF generation error:", error);
+    return NextResponse.json(
+      { error: "Не удалось создать PDF" },
+      { status: 500 }
+    );
+  }
 }

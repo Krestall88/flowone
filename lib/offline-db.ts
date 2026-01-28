@@ -13,7 +13,7 @@ interface OfflineEntry {
 }
 
 const DB_NAME = 'haccp-offline-db';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 const STORE_NAME = 'pending-entries';
 
 class OfflineDB {
@@ -31,12 +31,18 @@ class OfflineDB {
 
       request.onupgradeneeded = (event) => {
         const db = (event.target as IDBOpenDBRequest).result;
+        const oldVersion = event.oldVersion;
         
         if (!db.objectStoreNames.contains(STORE_NAME)) {
           const store = db.createObjectStore(STORE_NAME, { keyPath: 'id' });
           store.createIndex('synced', 'synced', { unique: false });
           store.createIndex('timestamp', 'timestamp', { unique: false });
           store.createIndex('type', 'type', { unique: false });
+        } else if (oldVersion < 2) {
+          // Migration from v1 to v2: clear all entries to fix invalid synced index values
+          const transaction = (event.target as IDBOpenDBRequest).transaction!;
+          const store = transaction.objectStore(STORE_NAME);
+          store.clear();
         }
       };
     });
