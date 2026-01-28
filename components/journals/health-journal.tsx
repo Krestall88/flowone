@@ -10,6 +10,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/com
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
+import { offlineDB } from "@/lib/offline-db";
 
 type Status = "healthy" | "sick" | "vacation" | "day_off" | "sick_leave" | null;
 
@@ -95,6 +96,7 @@ export function HealthJournal({ employees, date, initialStatuses, initialNotes, 
   const searchParams = useSearchParams();
   const documentId = searchParams.get("documentId");
   const [success, setSuccess] = useState(false);
+  const [savedOffline, setSavedOffline] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const [search, setSearch] = useState("");
@@ -116,6 +118,7 @@ export function HealthJournal({ employees, date, initialStatuses, initialNotes, 
     setStatuses(initialStatuses ?? {});
     setNotes(initialNotes ?? {});
     setSuccess(false);
+    setSavedOffline(false);
     setError(null);
   }, [date, initialStatuses, initialNotes]);
 
@@ -250,6 +253,7 @@ export function HealthJournal({ employees, date, initialStatuses, initialNotes, 
     if (isReadOnly) return;
     setError(null);
     setSuccess(false);
+    setSavedOffline(false);
 
     startTransition(async () => {
       try {
@@ -268,10 +272,42 @@ export function HealthJournal({ employees, date, initialStatuses, initialNotes, 
           }
         });
 
-        const res = await fetch("/api/journals/health", {
-          method: "POST",
-          body: formData,
-        });
+        let res: Response | null = null;
+        try {
+          res = await fetch("/api/journals/health", {
+            method: "POST",
+            body: formData,
+          });
+        } catch {
+          res = null;
+        }
+
+        if (!res) {
+          if (typeof navigator !== "undefined" && navigator.onLine) {
+            throw new Error("Не удалось отправить данные. Попробуйте ещё раз.");
+          }
+
+          const payload = {
+            date,
+            documentId: documentId && documentId.trim() ? documentId.trim() : null,
+            entries: employees
+              .map((e) => {
+                const status = statuses[e.id];
+                const note = notes[e.id];
+                return {
+                  employeeId: e.id,
+                  status,
+                  note: note && note.trim() ? note.trim() : null,
+                };
+              })
+              .filter((e) => !!e.status),
+          };
+
+          await offlineDB.addEntry("health", payload);
+          setSavedOffline(true);
+          setSuccess(true);
+          return;
+        }
 
         if (!res.ok) {
           const data = await res.json().catch(() => null);
@@ -640,7 +676,9 @@ export function HealthJournal({ employees, date, initialStatuses, initialNotes, 
       {success && (
         <div className="flex items-center gap-2 rounded-lg border border-emerald-500/40 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-300">
           <CheckCircle2 className="h-4 w-4" />
-          Журнал успешно подписан.
+          {savedOffline
+            ? "Сохранено оффлайн. Записи будут отправлены автоматически при появлении связи."
+            : "Журнал успешно подписан."}
         </div>
       )}
 

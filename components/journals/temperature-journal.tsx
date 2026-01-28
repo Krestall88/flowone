@@ -11,6 +11,7 @@ import { ThermometerSun, CheckCircle2, Plus, ChevronDown } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { offlineDB } from "@/lib/offline-db";
 import {
   Dialog,
   DialogTrigger,
@@ -55,6 +56,7 @@ export function TemperatureJournal({ userName, locations, entries, date, signedL
   const [values, setValues] = useState<TemperatureEquipmentEntry[]>(entries);
   const [isPending, startTransition] = useTransition();
   const [success, setSuccess] = useState(false);
+  const [savedOffline, setSavedOffline] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [warnings, setWarnings] = useState<string[]>([]);
 
@@ -80,6 +82,7 @@ export function TemperatureJournal({ userName, locations, entries, date, signedL
   useEffect(() => {
     setValues(entries);
     setSuccess(false);
+    setSavedOffline(false);
     setError(null);
     setWarnings([]);
     setOpenLocations({});
@@ -223,6 +226,7 @@ export function TemperatureJournal({ userName, locations, entries, date, signedL
     if (isReadOnly) return;
     setError(null);
     setSuccess(false);
+    setSavedOffline(false);
     setWarnings([]);
 
     startTransition(async () => {
@@ -262,10 +266,42 @@ export function TemperatureJournal({ userName, locations, entries, date, signedL
           });
         });
 
-        const res = await fetch("/api/journals/temperature", {
-          method: "POST",
-          body: formData,
-        });
+        let res: Response | null = null;
+        try {
+          res = await fetch("/api/journals/temperature", {
+            method: "POST",
+            body: formData,
+          });
+        } catch {
+          res = null;
+        }
+
+        if (!res) {
+          if (typeof navigator !== "undefined" && navigator.onLine) {
+            throw new Error("Не удалось отправить данные. Попробуйте ещё раз.");
+          }
+
+          const payload = {
+            date,
+            documentId: documentId && documentId.trim() ? documentId.trim() : null,
+            entries: values
+              .map((entry) => ({
+                equipmentId: entry.id,
+                morning: entry.morning,
+                day: entry.day,
+                evening: entry.evening,
+              }))
+              .filter((entry) =>
+                entry.morning !== null || entry.day !== null || entry.evening !== null,
+              ),
+          };
+
+          await offlineDB.addEntry("temperature", payload);
+          setWarnings(newWarnings);
+          setSavedOffline(true);
+          setSuccess(true);
+          return;
+        }
 
         if (!res.ok) {
           const data = await res.json().catch(() => null);
@@ -710,7 +746,7 @@ export function TemperatureJournal({ userName, locations, entries, date, signedL
       {success && (
         <div className="flex items-center gap-2 rounded-lg border border-emerald-500/40 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-300">
           <CheckCircle2 className="h-4 w-4" />
-          Записи успешно сохранены и подписаны.
+          {savedOffline ? "Сохранено оффлайн. Записи будут отправлены автоматически при появлении связи." : "Записи успешно сохранены и подписаны."}
         </div>
       )}
 

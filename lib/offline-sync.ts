@@ -125,6 +125,7 @@ class OfflineSyncManager {
       headers: {
         'Content-Type': 'application/json',
       },
+      credentials: 'include',
       body: JSON.stringify(entry.data),
     });
 

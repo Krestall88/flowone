@@ -31,34 +31,76 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const formData = await req.formData();
+    const contentType = req.headers.get("content-type") ?? "";
 
-    const rawDate = formData.get("date");
-    const rawDocumentId = formData.get("documentId");
-    const documentId =
-      typeof rawDocumentId === "string" && rawDocumentId.trim()
-        ? Number(rawDocumentId)
-        : null;
-
+    let rawDate: unknown;
+    let documentId: number | null = null;
     const entriesMap = new Map<
       number,
       { morning?: number | null; day?: number | null; evening?: number | null }
     >();
 
-    for (const [key, value] of formData.entries()) {
-      if (typeof value !== "string" || !value) continue;
-      const [field, idPart] = key.split("-");
-      const equipmentId = Number(idPart);
-      if (!equipmentId || Number.isNaN(equipmentId)) continue;
+    if (contentType.includes("application/json")) {
+      const body = await req.json().catch(() => null);
+      rawDate = body?.date;
+      documentId =
+        typeof body?.documentId === "number"
+          ? body.documentId
+          : typeof body?.documentId === "string" && body.documentId.trim()
+            ? Number(body.documentId)
+            : null;
 
-      const numeric = value === "" ? null : Number(value);
-      if (numeric !== null && Number.isNaN(numeric)) continue;
+      const entries = Array.isArray(body?.entries) ? body.entries : [];
+      for (const entry of entries) {
+        const equipmentId = Number(entry?.equipmentId);
+        if (!equipmentId || Number.isNaN(equipmentId)) continue;
 
-      const current = entriesMap.get(equipmentId) ?? {};
-      if (field === "morning") current.morning = numeric;
-      if (field === "day") current.day = numeric;
-      if (field === "evening") current.evening = numeric;
-      entriesMap.set(equipmentId, current);
+        const current = entriesMap.get(equipmentId) ?? {};
+
+        const morning = entry?.morning;
+        const dayValue = entry?.day;
+        const evening = entry?.evening;
+
+        if (morning !== undefined) {
+          const num = morning === null ? null : Number(morning);
+          if (num === null || !Number.isNaN(num)) current.morning = num;
+        }
+        if (dayValue !== undefined) {
+          const num = dayValue === null ? null : Number(dayValue);
+          if (num === null || !Number.isNaN(num)) current.day = num;
+        }
+        if (evening !== undefined) {
+          const num = evening === null ? null : Number(evening);
+          if (num === null || !Number.isNaN(num)) current.evening = num;
+        }
+
+        entriesMap.set(equipmentId, current);
+      }
+    } else {
+      const formData = await req.formData();
+
+      rawDate = formData.get("date");
+      const rawDocumentId = formData.get("documentId");
+      documentId =
+        typeof rawDocumentId === "string" && rawDocumentId.trim()
+          ? Number(rawDocumentId)
+          : null;
+
+      for (const [key, value] of formData.entries()) {
+        if (typeof value !== "string" || !value) continue;
+        const [field, idPart] = key.split("-");
+        const equipmentId = Number(idPart);
+        if (!equipmentId || Number.isNaN(equipmentId)) continue;
+
+        const numeric = value === "" ? null : Number(value);
+        if (numeric !== null && Number.isNaN(numeric)) continue;
+
+        const current = entriesMap.get(equipmentId) ?? {};
+        if (field === "morning") current.morning = numeric;
+        if (field === "day") current.day = numeric;
+        if (field === "evening") current.evening = numeric;
+        entriesMap.set(equipmentId, current);
+      }
     }
 
     if (entriesMap.size === 0) {

@@ -31,41 +31,66 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const formData = await req.formData();
+    const contentType = req.headers.get("content-type") ?? "";
 
-    const rawDate = formData.get("date");
-    const rawDocumentId = formData.get("documentId");
-    const documentId =
-      typeof rawDocumentId === "string" && rawDocumentId.trim()
-        ? Number(rawDocumentId)
-        : null;
-
+    let rawDate: unknown;
+    let documentId: number | null = null;
     type Entry = { employeeId: number; status: string; note?: string | null };
     const entries: Entry[] = [];
 
-    const byEmployee = new Map<number, Entry>();
+    if (contentType.includes("application/json")) {
+      const body = await req.json().catch(() => null);
+      rawDate = body?.date;
+      documentId =
+        typeof body?.documentId === "number"
+          ? body.documentId
+          : typeof body?.documentId === "string" && body.documentId.trim()
+            ? Number(body.documentId)
+            : null;
 
-    for (const [key, value] of formData.entries()) {
-      if (typeof value !== "string" || !value) continue;
-      const [field, idPart] = key.split("-");
-      const employeeId = Number(idPart);
-      if (!employeeId || Number.isNaN(employeeId)) continue;
+      const bodyEntries = Array.isArray(body?.entries) ? body.entries : [];
+      for (const entry of bodyEntries) {
+        const employeeId = Number(entry?.employeeId);
+        const status = typeof entry?.status === "string" ? entry.status : "";
+        const note = typeof entry?.note === "string" ? entry.note : null;
 
-      const current = byEmployee.get(employeeId) ?? { employeeId, status: "" };
-
-      if (field === "status") {
-        current.status = value;
+        if (!employeeId || Number.isNaN(employeeId) || !status) continue;
+        entries.push({ employeeId, status, note });
       }
-      if (field === "note") {
-        current.note = value || null;
+    } else {
+      const formData = await req.formData();
+
+      rawDate = formData.get("date");
+      const rawDocumentId = formData.get("documentId");
+      documentId =
+        typeof rawDocumentId === "string" && rawDocumentId.trim()
+          ? Number(rawDocumentId)
+          : null;
+
+      const byEmployee = new Map<number, Entry>();
+
+      for (const [key, value] of formData.entries()) {
+        if (typeof value !== "string" || !value) continue;
+        const [field, idPart] = key.split("-");
+        const employeeId = Number(idPart);
+        if (!employeeId || Number.isNaN(employeeId)) continue;
+
+        const current = byEmployee.get(employeeId) ?? { employeeId, status: "" };
+
+        if (field === "status") {
+          current.status = value;
+        }
+        if (field === "note") {
+          current.note = value || null;
+        }
+
+        byEmployee.set(employeeId, current);
       }
 
-      byEmployee.set(employeeId, current);
-    }
-
-    for (const entry of byEmployee.values()) {
-      if (!entry.status) continue;
-      entries.push(entry);
+      for (const entry of byEmployee.values()) {
+        if (!entry.status) continue;
+        entries.push(entry);
+      }
     }
 
     if (entries.length === 0) {
