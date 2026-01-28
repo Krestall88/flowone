@@ -71,7 +71,7 @@ class OfflineDB {
       const transaction = this.db!.transaction([STORE_NAME], 'readonly');
       const store = transaction.objectStore(STORE_NAME);
       const index = store.index('synced');
-      const request = index.getAll(false);
+      const request = index.getAll(IDBKeyRange.only(false));
 
       request.onsuccess = () => resolve(request.result);
       request.onerror = () => reject(request.error);
@@ -142,12 +142,24 @@ class OfflineDB {
   async clearSyncedEntries(): Promise<void> {
     if (!this.db) await this.init();
 
-    const entries = await this.getPendingEntries();
-    const syncedEntries = entries.filter(e => e.synced);
+    return new Promise((resolve, reject) => {
+      const transaction = this.db!.transaction([STORE_NAME], 'readwrite');
+      const store = transaction.objectStore(STORE_NAME);
+      const index = store.index('synced');
+      const request = index.getAll(IDBKeyRange.only(true));
 
-    return Promise.all(
-      syncedEntries.map(entry => this.deleteEntry(entry.id))
-    ).then(() => {});
+      request.onsuccess = async () => {
+        try {
+          const syncedEntries = request.result as OfflineEntry[];
+          await Promise.all(syncedEntries.map((entry) => this.deleteEntry(entry.id)));
+          resolve();
+        } catch (error) {
+          reject(error);
+        }
+      };
+
+      request.onerror = () => reject(request.error);
+    });
   }
 
   async getEntryCount(): Promise<number> {
