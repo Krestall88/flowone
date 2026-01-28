@@ -12,6 +12,7 @@ class OfflineSyncManager {
   private syncInterval: NodeJS.Timeout | null = null;
   private isSyncing = false;
   private onlineHandler: (() => void) | null = null;
+  private lastError: string | null = null;
 
   /**
    * Start the sync manager
@@ -70,6 +71,7 @@ class OfflineSyncManager {
     let failedCount = 0;
 
     try {
+      this.lastError = null;
       const pendingEntries = await offlineDB.getPendingEntries();
       
       if (pendingEntries.length === 0) {
@@ -82,7 +84,7 @@ class OfflineSyncManager {
       for (const entry of pendingEntries) {
         try {
           await this.syncEntry(entry);
-          await offlineDB.markAsSynced(entry.id);
+          await offlineDB.deleteEntry(entry.id);
           successCount++;
           console.log(`[OfflineSync] Successfully synced entry ${entry.id}`);
         } catch (error) {
@@ -96,15 +98,18 @@ class OfflineSyncManager {
           }
           
           failedCount++;
+          if (error instanceof Error) {
+            this.lastError = error.message;
+          } else {
+            this.lastError = 'Sync failed';
+          }
         }
       }
-
-      // Clean up synced entries
-      await offlineDB.clearSyncedEntries();
 
       console.log(`[OfflineSync] Sync complete: ${successCount} success, ${failedCount} failed`);
     } catch (error) {
       console.error('[OfflineSync] Sync error:', error);
+      this.lastError = error instanceof Error ? error.message : 'Sync error';
     } finally {
       this.isSyncing = false;
     }
@@ -129,11 +134,20 @@ class OfflineSyncManager {
       body: JSON.stringify(entry.data),
     });
 
+    if ((response as any).type === 'opaqueredirect' || response.redirected) {
+      throw new Error('Unauthorized: redirected');
+    }
+
     if (!response.ok) {
       throw new Error(`HTTP ${response.status}: ${response.statusText}`);
     }
 
-    return response.json();
+    const contentType = response.headers.get('content-type') ?? '';
+    if (!contentType.includes('application/json')) {
+      throw new Error('Unexpected response from server');
+    }
+
+    await response.json();
   }
 
   /**
@@ -143,13 +157,15 @@ class OfflineSyncManager {
     pendingCount: number;
     isSyncing: boolean;
     isOnline: boolean;
+    lastError: string | null;
   }> {
-    const pendingCount = await offlineDB.getEntryCount();
+    const pendingCount = await offlineDB.getPendingCount();
     
     return {
       pendingCount,
       isSyncing: this.isSyncing,
       isOnline: typeof navigator !== 'undefined' ? navigator.onLine : true,
+      lastError: this.lastError,
     };
   }
 

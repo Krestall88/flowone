@@ -122,6 +122,39 @@ export function HealthJournal({ employees, date, initialStatuses, initialNotes, 
     setError(null);
   }, [date, initialStatuses, initialNotes]);
 
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const pending = await offlineDB.getPendingEntries();
+        const candidate = pending
+          .filter((e) => e.type === "health" && e.data?.date === date)
+          .sort((a, b) => b.timestamp - a.timestamp)[0];
+
+        if (!candidate || cancelled) return;
+
+        const pendingEntries = Array.isArray(candidate.data?.entries) ? candidate.data.entries : [];
+        const nextStatuses: Record<number, any> = {};
+        const nextNotes: Record<number, string> = {};
+
+        for (const entry of pendingEntries) {
+          const employeeId = Number(entry?.employeeId);
+          if (!employeeId || Number.isNaN(employeeId)) continue;
+          if (entry?.status) nextStatuses[employeeId] = entry.status;
+          if (typeof entry?.note === "string" && entry.note.trim()) nextNotes[employeeId] = entry.note;
+        }
+
+        setStatuses((prev) => ({ ...prev, ...nextStatuses }));
+        setNotes((prev) => ({ ...prev, ...nextNotes }));
+      } catch {
+        // ignore
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [date]);
+
   const selectedDate = parseISO(date);
   const isToday = isSameDay(selectedDate, startOfToday());
   const isReadOnly = !isToday;

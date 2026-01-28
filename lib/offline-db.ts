@@ -174,6 +174,20 @@ class OfflineDB {
       request.onerror = () => reject(request.error);
     });
   }
+
+  async getPendingCount(): Promise<number> {
+    if (!this.db) await this.init();
+
+    return new Promise((resolve, reject) => {
+      const transaction = this.db!.transaction([STORE_NAME], 'readonly');
+      const store = transaction.objectStore(STORE_NAME);
+      const index = store.index('synced');
+      const request = index.count(IDBKeyRange.only(false));
+
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+  }
 }
 
 export const offlineDB = new OfflineDB();

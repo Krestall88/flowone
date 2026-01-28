@@ -11,6 +11,7 @@ export function OfflineIndicator() {
   const [pendingCount, setPendingCount] = useState(0);
   const [isSyncing, setIsSyncing] = useState(false);
   const [lastSyncResult, setLastSyncResult] = useState<{ success: number; failed: number } | null>(null);
+  const [lastError, setLastError] = useState<string | null>(null);
 
   useEffect(() => {
     // Initialize sync manager
@@ -26,6 +27,7 @@ export function OfflineIndicator() {
       const status = await offlineSyncManager.getStatus();
       setPendingCount(status.pendingCount);
       setIsSyncing(status.isSyncing);
+      setLastError(status.lastError);
     };
 
     // Initial status
@@ -56,6 +58,7 @@ export function OfflineIndicator() {
       // Update pending count
       const status = await offlineSyncManager.getStatus();
       setPendingCount(status.pendingCount);
+      setLastError(status.lastError);
     } catch (error) {
       console.error('Force sync failed:', error);
     } finally {
@@ -150,7 +153,13 @@ export function OfflineIndicator() {
           {/* Additional Info */}
           {!isOnline && pendingCount > 0 && (
             <div className="mt-2 rounded bg-red-500/10 px-2 py-1 text-xs text-red-200">
-              💡 Данные будут отправлены автоматически при восстановлении связи
+              Данные будут отправлены автоматически при восстановлении связи
+            </div>
+          )}
+
+          {isOnline && pendingCount > 0 && lastError && (
+            <div className="mt-2 rounded bg-amber-500/10 px-2 py-1 text-xs text-amber-200">
+              Ошибка синхронизации: {lastError}
             </div>
           )}
         </CardContent>

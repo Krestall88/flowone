@@ -5,6 +5,8 @@ import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/session";
 import { renderTemperatureJournalPdf, MONTHS_RU, type EquipmentRow } from "./render";
 
+ export const dynamic = "force-dynamic";
+
 export async function GET(req: NextRequest) {
   await requireUser();
 
@@ -88,6 +90,7 @@ export async function GET(req: NextRequest) {
     headers: {
       "Content-Type": "application/pdf",
       "Content-Disposition": `attachment; filename="${fileName}"`,
+      "Cache-Control": "no-store",
     },
   });
 }

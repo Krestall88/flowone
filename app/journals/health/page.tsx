@@ -9,6 +9,7 @@ import { AppSidebar } from "@/components/layout/app-sidebar";
 import { HealthJournal } from "@/components/journals/health-journal";
 import { JournalsDateToolbar } from "@/components/journals/journals-date-toolbar";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
+import { PdfExportButton } from "@/components/journals/pdf-export-button";
 
 export default async function HealthJournalPage({
   searchParams,
@@ -115,14 +116,7 @@ export default async function HealthJournalPage({
           <JournalsDateToolbar date={isoDate} basePath="/journals/health" hasData={hasData} />
 
           <div className="mt-3 flex justify-end">
-            <a
-              href={`/api/journals/health/pdf?date=${isoDate}`}
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex items-center gap-2 rounded-lg border border-slate-700 bg-slate-900 px-3 py-1.5 text-xs font-medium text-slate-200 shadow-sm transition hover:border-emerald-500 hover:text-emerald-200"
-            >
-              Экспорт в PDF
-            </a>
+            <PdfExportButton href={`/api/journals/health/pdf?date=${isoDate}`} />
           </div>
 
           <HealthJournal

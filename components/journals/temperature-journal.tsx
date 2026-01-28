@@ -87,6 +87,39 @@ export function TemperatureJournal({ userName, locations, entries, date, signedL
     setWarnings([]);
     setOpenLocations({});
   }, [entries, date]);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const pending = await offlineDB.getPendingEntries();
+        const candidate = pending
+          .filter((e) => e.type === "temperature" && e.data?.date === date)
+          .sort((a, b) => b.timestamp - a.timestamp)[0];
+
+        if (!candidate || cancelled) return;
+
+        const pendingEntries = Array.isArray(candidate.data?.entries) ? candidate.data.entries : [];
+        setValues((prev) =>
+          prev.map((row) => {
+            const match = pendingEntries.find((p: any) => Number(p?.equipmentId) === row.id);
+            if (!match) return row;
+            return {
+              ...row,
+              morning: match.morning ?? row.morning,
+              day: match.day ?? row.day,
+              evening: match.evening ?? row.evening,
+            };
+          }),
+        );
+      } catch {
+        // ignore
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [date]);
   const selectedDate = parseISO(date);
   const dateLabel = format(selectedDate, "d MMMM yyyy", { locale: ru });
 
