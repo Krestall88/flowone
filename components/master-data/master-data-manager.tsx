@@ -72,6 +72,12 @@ export function MasterDataManager({
   const [locationError, setLocationError] = useState<string | null>(null);
   const [locationBusy, setLocationBusy] = useState(false);
 
+  const [editingLocationId, setEditingLocationId] = useState<number | null>(null);
+  const [editLocationName, setEditLocationName] = useState("");
+  const [editLocationError, setEditLocationError] = useState<string | null>(null);
+  const [editLocationBusy, setEditLocationBusy] = useState(false);
+  const [deleteLocationBusy, setDeleteLocationBusy] = useState(false);
+
   const [isAddEquipmentOpen, setIsAddEquipmentOpen] = useState(false);
   const [newEquipmentName, setNewEquipmentName] = useState("");
   const [newEquipmentLocationId, setNewEquipmentLocationId] = useState("");
@@ -80,6 +86,16 @@ export function MasterDataManager({
   const [newEquipmentTolerance, setNewEquipmentTolerance] = useState("");
   const [equipmentError, setEquipmentError] = useState<string | null>(null);
   const [equipmentBusy, setEquipmentBusy] = useState(false);
+
+  const [editingEquipmentId, setEditingEquipmentId] = useState<number | null>(null);
+  const [editEquipmentName, setEditEquipmentName] = useState("");
+  const [editEquipmentLocationId, setEditEquipmentLocationId] = useState("");
+  const [editEquipmentType, setEditEquipmentType] = useState("fridge");
+  const [editEquipmentTargetTemp, setEditEquipmentTargetTemp] = useState("");
+  const [editEquipmentTolerance, setEditEquipmentTolerance] = useState("");
+  const [editEquipmentError, setEditEquipmentError] = useState<string | null>(null);
+  const [editEquipmentBusy, setEditEquipmentBusy] = useState(false);
+  const [deleteEquipmentBusy, setDeleteEquipmentBusy] = useState(false);
 
   const openEditEmployee = (e: EmployeeItem) => {
     setEditingEmployeeId(e.id);
@@ -180,6 +196,12 @@ export function MasterDataManager({
     }
   };
 
+  const openEditLocation = (loc: LocationItem) => {
+    setEditingLocationId(loc.id);
+    setEditLocationName(loc.name);
+    setEditLocationError(null);
+  };
+
   const handleAddLocation = async () => {
     const name = newLocationName.trim();
     if (!name) {
@@ -210,6 +232,72 @@ export function MasterDataManager({
     } finally {
       setLocationBusy(false);
     }
+  };
+
+  const handleSaveLocation = async () => {
+    if (!editingLocationId) return;
+
+    const name = editLocationName.trim();
+    if (!name) {
+      setEditLocationError("Укажите название помещения");
+      return;
+    }
+
+    setEditLocationBusy(true);
+    setEditLocationError(null);
+
+    try {
+      const res = await fetch("/api/journals/locations", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: editingLocationId, name }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        throw new Error(data?.error ?? "Не удалось сохранить помещение");
+      }
+
+      window.location.reload();
+    } catch (err) {
+      setEditLocationError(err instanceof Error ? err.message : "Ошибка сохранения помещения");
+    } finally {
+      setEditLocationBusy(false);
+    }
+  };
+
+  const handleDeleteLocation = async () => {
+    if (!editingLocationId) return;
+
+    setDeleteLocationBusy(true);
+    setEditLocationError(null);
+
+    try {
+      const res = await fetch(`/api/journals/locations?id=${editingLocationId}`, {
+        method: "DELETE",
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        throw new Error(data?.error ?? "Не удалось удалить помещение");
+      }
+
+      window.location.reload();
+    } catch (err) {
+      setEditLocationError(err instanceof Error ? err.message : "Ошибка удаления помещения");
+    } finally {
+      setDeleteLocationBusy(false);
+    }
+  };
+
+  const openEditEquipment = (eq: EquipmentItem) => {
+    setEditingEquipmentId(eq.id);
+    setEditEquipmentName(eq.name);
+    setEditEquipmentLocationId(String(eq.locationId));
+    setEditEquipmentType(eq.type);
+    setEditEquipmentTargetTemp(String(eq.targetTemp));
+    setEditEquipmentTolerance(String(eq.tolerance));
+    setEditEquipmentError(null);
   };
 
   const handleAddEquipment = async () => {
@@ -259,6 +347,83 @@ export function MasterDataManager({
       setEquipmentError(err instanceof Error ? err.message : "Ошибка добавления оборудования");
     } finally {
       setEquipmentBusy(false);
+    }
+  };
+
+  const handleSaveEquipment = async () => {
+    if (!editingEquipmentId) return;
+
+    const name = editEquipmentName.trim();
+    if (!name) {
+      setEditEquipmentError("Укажите название оборудования");
+      return;
+    }
+
+    const locationId = Number(editEquipmentLocationId);
+    if (!locationId || Number.isNaN(locationId)) {
+      setEditEquipmentError("Выберите помещение");
+      return;
+    }
+
+    const targetTemp = Number(editEquipmentTargetTemp.replace(",", "."));
+    const tolerance = Number(editEquipmentTolerance.replace(",", "."));
+
+    if (!Number.isFinite(targetTemp) || !Number.isFinite(tolerance)) {
+      setEditEquipmentError("Укажите корректные числовые значения нормы и допуска");
+      return;
+    }
+
+    setEditEquipmentBusy(true);
+    setEditEquipmentError(null);
+
+    try {
+      const res = await fetch("/api/journals/equipment", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: editingEquipmentId,
+          name,
+          locationId,
+          targetTemp,
+          tolerance,
+          type: editEquipmentType,
+        }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        throw new Error(data?.error ?? "Не удалось сохранить оборудование");
+      }
+
+      window.location.reload();
+    } catch (err) {
+      setEditEquipmentError(err instanceof Error ? err.message : "Ошибка сохранения оборудования");
+    } finally {
+      setEditEquipmentBusy(false);
+    }
+  };
+
+  const handleDeleteEquipment = async () => {
+    if (!editingEquipmentId) return;
+
+    setDeleteEquipmentBusy(true);
+    setEditEquipmentError(null);
+
+    try {
+      const res = await fetch(`/api/journals/equipment?id=${editingEquipmentId}`, {
+        method: "DELETE",
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        throw new Error(data?.error ?? "Не удалось удалить оборудование");
+      }
+
+      window.location.reload();
+    } catch (err) {
+      setEditEquipmentError(err instanceof Error ? err.message : "Ошибка удаления оборудования");
+    } finally {
+      setDeleteEquipmentBusy(false);
     }
   };
 
@@ -518,8 +683,67 @@ export function MasterDataManager({
 
               <div className="space-y-2">
                 {locations.map((loc) => (
-                  <div key={loc.id} className="rounded-xl border border-slate-800 bg-slate-950/30 p-4 text-white">
-                    {loc.name}
+                  <div key={loc.id} className="rounded-xl border border-slate-800 bg-slate-950/30 p-4">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                      <div className="font-semibold text-white">{loc.name}</div>
+                      {!readOnly && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          className="border-slate-700 text-white hover:bg-slate-800"
+                          onClick={() => openEditLocation(loc)}
+                        >
+                          Редактировать
+                        </Button>
+                      )}
+                    </div>
+
+                    {!readOnly && editingLocationId === loc.id && (
+                      <div className="mt-3 rounded-xl border border-slate-800 bg-slate-950/40 p-3">
+                        <Input
+                          value={editLocationName}
+                          onChange={(ev) => setEditLocationName(ev.target.value)}
+                          placeholder="Название помещения"
+                          className="h-10 rounded-lg border-slate-700 bg-slate-900 text-white placeholder:text-slate-500"
+                        />
+
+                        {editLocationError && <p className="mt-2 text-xs text-red-400">{editLocationError}</p>}
+
+                        <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
+                          <Button
+                            type="button"
+                            variant="destructive"
+                            className="bg-red-500/80 text-white"
+                            onClick={handleDeleteLocation}
+                            disabled={deleteLocationBusy || editLocationBusy}
+                          >
+                            {deleteLocationBusy ? "Удаляем..." : "Удалить"}
+                          </Button>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <Button
+                              type="button"
+                              variant="outline"
+                              className="border-slate-700 text-white hover:bg-slate-800"
+                              onClick={() => {
+                                setEditingLocationId(null);
+                                setEditLocationError(null);
+                              }}
+                              disabled={deleteLocationBusy || editLocationBusy}
+                            >
+                              Закрыть
+                            </Button>
+                            <Button
+                              type="button"
+                              onClick={handleSaveLocation}
+                              disabled={editLocationBusy || deleteLocationBusy}
+                              className="bg-emerald-600 text-white hover:bg-emerald-500"
+                            >
+                              {editLocationBusy ? "Сохраняем..." : "Сохранить"}
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -625,12 +849,114 @@ export function MasterDataManager({
                           {items.map((eq) => (
                             <div key={eq.id} className="rounded-lg border border-slate-800 bg-slate-900/40 p-3">
                               <div className="flex flex-wrap items-center justify-between gap-2">
-                                <div className="font-medium text-white">{eq.name}</div>
-                                <div className="text-xs text-slate-300">
-                                  {eq.targetTemp}±{eq.tolerance} °C
+                                <div>
+                                  <div className="font-medium text-white">{eq.name}</div>
+                                  <div className="mt-1 text-xs text-slate-500">Тип: {eq.type}</div>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <div className="text-xs text-slate-300">
+                                    {eq.targetTemp}±{eq.tolerance} °C
+                                  </div>
+                                  {!readOnly && (
+                                    <Button
+                                      type="button"
+                                      variant="outline"
+                                      size="sm"
+                                      className="border-slate-700 text-white hover:bg-slate-800"
+                                      onClick={() => openEditEquipment(eq)}
+                                    >
+                                      Редактировать
+                                    </Button>
+                                  )}
                                 </div>
                               </div>
-                              <div className="mt-1 text-xs text-slate-500">Тип: {eq.type}</div>
+
+                              {!readOnly && editingEquipmentId === eq.id && (
+                                <div className="mt-3 rounded-xl border border-slate-800 bg-slate-950/40 p-3">
+                                  <div className="grid gap-3 sm:grid-cols-2">
+                                    <Input
+                                      value={editEquipmentName}
+                                      onChange={(e) => setEditEquipmentName(e.target.value)}
+                                      placeholder="Название оборудования"
+                                      className="h-10 rounded-lg border-slate-700 bg-slate-900 text-white placeholder:text-slate-500"
+                                    />
+                                    <select
+                                      value={editEquipmentLocationId}
+                                      onChange={(e) => setEditEquipmentLocationId(e.target.value)}
+                                      className="h-10 rounded-lg border border-slate-700 bg-slate-900 px-3 text-sm text-slate-100"
+                                    >
+                                      <option value="">Выберите помещение</option>
+                                      {locations.map((loc) => (
+                                        <option key={loc.id} value={String(loc.id)}>
+                                          {loc.name}
+                                        </option>
+                                      ))}
+                                    </select>
+                                    <select
+                                      value={editEquipmentType}
+                                      onChange={(e) => setEditEquipmentType(e.target.value)}
+                                      className="h-10 rounded-lg border border-slate-700 bg-slate-900 px-3 text-sm text-slate-100"
+                                    >
+                                      <option value="fridge">Холодильник</option>
+                                      <option value="freezer">Морозилка</option>
+                                      <option value="showcase">Витрина</option>
+                                      <option value="camera">Камера</option>
+                                    </select>
+                                    <div className="grid grid-cols-2 gap-3">
+                                      <Input
+                                        value={editEquipmentTargetTemp}
+                                        onChange={(e) => setEditEquipmentTargetTemp(e.target.value)}
+                                        placeholder="Норма, °C"
+                                        inputMode="decimal"
+                                        className="h-10 rounded-lg border-slate-700 bg-slate-900 text-white placeholder:text-slate-500"
+                                      />
+                                      <Input
+                                        value={editEquipmentTolerance}
+                                        onChange={(e) => setEditEquipmentTolerance(e.target.value)}
+                                        placeholder="Допуск, °C"
+                                        inputMode="decimal"
+                                        className="h-10 rounded-lg border-slate-700 bg-slate-900 text-white placeholder:text-slate-500"
+                                      />
+                                    </div>
+                                  </div>
+
+                                  {editEquipmentError && <p className="mt-2 text-xs text-red-400">{editEquipmentError}</p>}
+
+                                  <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
+                                    <Button
+                                      type="button"
+                                      variant="destructive"
+                                      className="bg-red-500/80 text-white"
+                                      onClick={handleDeleteEquipment}
+                                      disabled={deleteEquipmentBusy || editEquipmentBusy}
+                                    >
+                                      {deleteEquipmentBusy ? "Удаляем..." : "Удалить"}
+                                    </Button>
+                                    <div className="flex flex-wrap items-center gap-2">
+                                      <Button
+                                        type="button"
+                                        variant="outline"
+                                        className="border-slate-700 text-white hover:bg-slate-800"
+                                        onClick={() => {
+                                          setEditingEquipmentId(null);
+                                          setEditEquipmentError(null);
+                                        }}
+                                        disabled={deleteEquipmentBusy || editEquipmentBusy}
+                                      >
+                                        Закрыть
+                                      </Button>
+                                      <Button
+                                        type="button"
+                                        onClick={handleSaveEquipment}
+                                        disabled={editEquipmentBusy || deleteEquipmentBusy}
+                                        className="bg-emerald-600 text-white hover:bg-emerald-500"
+                                      >
+                                        {editEquipmentBusy ? "Сохраняем..." : "Сохранить"}
+                                      </Button>
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
                             </div>
                           ))}
                         </div>
