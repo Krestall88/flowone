@@ -187,10 +187,23 @@ class OfflineDB {
     return new Promise((resolve, reject) => {
       const transaction = this.db!.transaction([STORE_NAME], 'readonly');
       const store = transaction.objectStore(STORE_NAME);
-      const index = store.index('synced');
-      const request = index.count(IDBKeyRange.only(false));
+      
+      let count = 0;
+      const request = store.openCursor();
 
-      request.onsuccess = () => resolve(request.result);
+      request.onsuccess = (event) => {
+        const cursor = (event.target as IDBRequest<IDBCursorWithValue | null>).result;
+        if (cursor) {
+          const entry = cursor.value as OfflineEntry;
+          if (entry.synced === false) {
+            count++;
+          }
+          cursor.continue();
+        } else {
+          resolve(count);
+        }
+      };
+
       request.onerror = () => reject(request.error);
     });
   }
